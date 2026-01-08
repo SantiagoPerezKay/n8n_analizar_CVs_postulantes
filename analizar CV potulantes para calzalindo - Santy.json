@@ -1,0 +1,2786 @@
+{
+  "name": "analizar CV potulantes para calzalindo - Santy",
+  "nodes": [
+    {
+      "parameters": {
+        "inputText": "={{ $('RecibirInfoPrestashop').item.json.body.puesto }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "vendedor, ventas",
+              "description": "vendedor de salon"
+            },
+            {
+              "category": "deposito",
+              "description": "trabajo de deposito"
+            },
+            {
+              "category": "administracion",
+              "description": "trabajo admiinstrativo"
+            },
+            {
+              "category": "diseño",
+              "description": "redes, diseño, comunicacion, creador de contenido"
+            },
+            {
+              "category": "compras",
+              "description": "compras, administrativo de compras, administracion de compras, administrativo de compra"
+            },
+            {
+              "category": "mantenimiento",
+              "description": "mantenimiento"
+            },
+            {
+              "category": "logistica",
+              "description": "logistica"
+            },
+            {
+              "category": "rrhh junior",
+              "description": "rrhh junior, rrhh principante, rrhh novato, recursos humanos junior"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1.1,
+      "position": [
+        1232,
+        1744
+      ],
+      "id": "8858eb74-7c3e-4e2a-8f4a-26056df0d34f",
+      "name": "RediccionarSolcitudPostulante"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1304,
+        2160
+      ],
+      "id": "85167462-1ac6-404d-b6b2-3239864a690b",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "y24XiTpiUvoN6ssC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {
+          "joinPages": true
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        1744
+      ],
+      "id": "04362474-5ddc-4116-9229-72fe5e115432",
+      "name": "extraer texto del cv",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1656,
+        464
+      ],
+      "id": "81e80622-3d31-4e6c-b4d4-fe63eec904de",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "y24XiTpiUvoN6ssC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener el texto de salida del nodo anterior\nlet raw = $json.output || \"\";\n\n// 1️⃣ Eliminar los backticks, \"json\\n\", etc.\nraw = raw\n  .replace(/```json/gi, '')\n  .replace(/```/g, '')\n  .trim();\n\n// 2️⃣ Buscar un objeto JSON válido dentro del texto\nlet jsonTextMatch = raw.match(/\\{[\\s\\S]*\\}/);\nif (!jsonTextMatch) {\n  throw new Error(\"No se encontró un objeto JSON válido en la salida del modelo.\");\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(jsonTextMatch[0]);\n} catch (error) {\n  throw new Error(\"Error al parsear el JSON de la IA: \" + error.message);\n}\n\n// 3️⃣ Crear estructura limpia para base de datos\nconst resultado = {\n  nombre: parsed.nombre || \"Desconocido\",\n  puesto: parsed.puesto || \"Vendedor\",\n  puntaje: Number(parsed.puntaje) || 0,\n  recomendacion: parsed.recomendacion || \"Sin definir\",\n  cv_texto: parsed.cv_texto || \"\",\n  promedio_meses_empleos: parsed.promedio_meses_empleos ?? null,\n  dni: parsed.dni ?? null,\n  fecha_evaluacion: new Date().toISOString(),\n};\n\n// 4️⃣ Retornar el resultado para usarlo en el nodo PostgreSQL (Insert)\nreturn [resultado];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        344
+      ],
+      "id": "693d80b3-5148-4a5a-96c1-6a1c0e2b311d",
+      "name": "depurar output IA"
+    },
+    {
+      "parameters": {
+        "path": "cv",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        288,
+        1984
+      ],
+      "id": "602cda7d-1485-421f-b9f8-d8e97128d001",
+      "name": "Webhook Dashboard",
+      "webhookId": "ddcb2030-b66c-4077-b6dc-3a971c804d3e"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        1984
+      ],
+      "id": "dad32e00-3a5c-41fe-b86c-9d2298cbf9fd",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "content": "## Dashboard para visualizar CVs\nAccede en:https://n8n.calzalindo.com.ar/webhook/cv",
+        "height": 232,
+        "width": 880
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        240,
+        1920
+      ],
+      "typeVersion": 1,
+      "id": "389cba1e-c292-4daf-9859-71f12d2e36aa",
+      "name": "Sticky Note Dashboard"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1656,
+        864
+      ],
+      "id": "f95ef8f3-43fb-4bc6-9a75-2fee16a3cf2d",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "y24XiTpiUvoN6ssC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1656,
+        1264
+      ],
+      "id": "3e68d0a8-670b-475c-9d05-958a0bdc1b81",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "y24XiTpiUvoN6ssC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1656,
+        1664
+      ],
+      "id": "a80342e7-6ae0-4b53-bdbf-3db318185e9d",
+      "name": "OpenAI Chat Model4",
+      "credentials": {
+        "openAiApi": {
+          "id": "y24XiTpiUvoN6ssC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1656,
+        2064
+      ],
+      "id": "fac45ba2-7ac8-4ede-99db-6e878082cb5b",
+      "name": "OpenAI Chat Model5",
+      "credentials": {
+        "openAiApi": {
+          "id": "y24XiTpiUvoN6ssC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mistralAi",
+      "typeVersion": 1,
+      "position": [
+        784,
+        1744
+      ],
+      "id": "8e0ea31d-39a6-4240-b74e-dfb3ef5c3578",
+      "name": "extraer de pdf scaneado",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "AsRAmYcXo8uAsAwp",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "recibircv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -112,
+        1744
+      ],
+      "id": "12c62cc3-6b99-4411-b76a-cb69e2b320f5",
+      "name": "RecibirInfoPrestashop",
+      "webhookId": "b91b5983-76fd-447d-885f-ec6ee20983ad"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://qzbrmwajddjdqffghwrw.supabase.co/storage/v1/object/cvs/{{ $json.body.nombre }}{{ $json.body.telefono }}.pdf",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "  Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6YnJtd2FqZGRqZHFmZmdod3J3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDEzNzQ4MiwiZXhwIjoyMDc1NzEzNDgyfQ.QIUb1LrnqNLcQKxcQy9E3W4zzZLNS9L8tQGRJ7iDQls"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/pdf"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "cv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        112,
+        1744
+      ],
+      "id": "c6f266b9-1fc3-45b7-85fc-48dca16661dc",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "url": "=https://qzbrmwajddjdqffghwrw.supabase.co/storage/v1/object/cvs/{{ $('RecibirInfoPrestashop').item.json.body.nombre }}{{ $('RecibirInfoPrestashop').item.json.body.telefono }}.pdf",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        1744
+      ],
+      "id": "6c8a7dd1-0084-431d-aaf4-d3cf633b7a47",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "47036631-20b5-4307-a073-3b6991351f99",
+              "name": "nombre",
+              "value": "={{ $('RecibirInfoPrestashop').item.json.body.nombre }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        336,
+        1744
+      ],
+      "id": "1addab81-8440-47fe-af3e-87a5c91f4a7e",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1656,
+        2464
+      ],
+      "id": "1b897953-cb7c-4757-9b47-12fb8fd6bde5",
+      "name": "OpenAI Chat Model6",
+      "credentials": {
+        "openAiApi": {
+          "id": "y24XiTpiUvoN6ssC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener el texto de salida del nodo anterior\nlet raw = $json.output || \"\";\n\n// 1️⃣ Eliminar los backticks, \"json\\n\", etc.\nraw = raw\n  .replace(/```json/gi, '')\n  .replace(/```/g, '')\n  .trim();\n\n// 2️⃣ Buscar un objeto JSON válido dentro del texto\nlet jsonTextMatch = raw.match(/\\{[\\s\\S]*\\}/);\nif (!jsonTextMatch) {\n  throw new Error(\"No se encontró un objeto JSON válido en la salida del modelo.\");\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(jsonTextMatch[0]);\n} catch (error) {\n  throw new Error(\"Error al parsear el JSON de la IA: \" + error.message);\n}\n\n// 3️⃣ Crear estructura limpia para base de datos\nconst resultado = {\n  nombre: parsed.nombre || \"Desconocido\",\n  puesto: parsed.puesto || \"Vendedor\",\n  puntaje: Number(parsed.puntaje) || 0,\n  recomendacion: parsed.recomendacion || \"Sin definir\",\n  cv_texto: parsed.cv_texto || \"\",\n  fecha_evaluacion: new Date().toISOString(),\n};\n\n// 4️⃣ Retornar el resultado para usarlo en el nodo PostgreSQL (Insert)\nreturn [resultado];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        2344
+      ],
+      "id": "3cdb4a69-eb7c-46ba-a756-e43dc9c72920",
+      "name": "depurar output IA6"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "postulantes_evaluaciones",
+          "mode": "list",
+          "cachedResultName": "postulantes_evaluaciones"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $('RecibirInfoPrestashop').item.json.body.nombre }}",
+            "puesto": "={{ $('RecibirInfoPrestashop').item.json.body.puesto }}",
+            "puntaje": "={{ $json.puntaje }}",
+            "recomendacion": "={{ $json.recomendacion }}",
+            "cv_texto": "={{ $json.cv_texto }}",
+            "fecha_evaluacion": "={{ $json.fecha_evaluacion }}",
+            "cvs_links": "={{ $('HTTP Request').item.json.Key }}",
+            "telefono": "={{ $('RecibirInfoPrestashop').item.json.body.telefono }}",
+            "email": "={{ $('RecibirInfoPrestashop').item.json.body.email }}",
+            "localidad": "={{ $('RecibirInfoPrestashop').item.json.body.localidad }}",
+            "promedio_meses_empleos": "={{ $json.promedio_meses_empleos }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puesto",
+              "displayName": "puesto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puntaje",
+              "displayName": "puntaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recomendacion",
+              "displayName": "recomendacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cv_texto",
+              "displayName": "cv_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_evaluacion",
+              "displayName": "fecha_evaluacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fuente",
+              "displayName": "fuente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cvs_links",
+              "displayName": "cvs_links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observaciones",
+              "displayName": "observaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "localidad",
+              "displayName": "localidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "promedio_meses_empleos",
+              "displayName": "promedio_meses_empleos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2160,
+        344
+      ],
+      "id": "6b6ad02e-3c27-4ae4-bd9f-486b26de61ab",
+      "name": "Insert rows in a table2",
+      "credentials": {
+        "postgres": {
+          "id": "nFqo90cHZ3ehf88W",
+          "name": "postgres supabase calzalindo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  p.id,\n  p.nombre,\n  p.puesto,\n  p.puntaje,\n  p.recomendacion,\n  p.cv_texto,\n  p.fecha_evaluacion,\n  p.fuente,\n  p.estado,\n  p.cvs_links,\n  p.observaciones,\n  p.telefono,\n  p.email,\n  p.localidad,\n  p.promedio_meses_empleos,\n  e.puntaje AS puntaje_evaluacion\nFROM postulantes_evaluaciones p\nLEFT JOIN evaluacion_preguntas e\nON UNACCENT(LOWER(TRIM(p.nombre))) = UNACCENT(LOWER(TRIM(e.nombre)));\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        512,
+        1984
+      ],
+      "id": "efc1fdff-6e04-484c-b456-23bea20b7793",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "nFqo90cHZ3ehf88W",
+          "name": "postgres supabase calzalindo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rechazo_cliente",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        288,
+        2208
+      ],
+      "id": "c0f07b8f-e78d-4d4d-bab4-7f1507d6f4c2",
+      "name": "Webhook",
+      "webhookId": "961c5a4d-c7f5-4f2b-8b2a-15a179a9d8ca"
+    },
+    {
+      "parameters": {
+        "phoneNumberId": "678173522038479",
+        "recipientPhoneNumber": "={{ $json.body.telefono }}",
+        "template": "rechazo_postulantes|es_AR",
+        "components": {
+          "component": [
+            {
+              "bodyParameters": {
+                "parameter": [
+                  {
+                    "text": "={{ $json.body.nombre }}"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        512,
+        2208
+      ],
+      "id": "4f41298a-62d7-41d3-bb2d-797650d2052f",
+      "name": "Send template",
+      "webhookId": "dc35133b-a11b-4533-9ade-c4fb214fc649",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Jon9ZW1DyTNlE1r2",
+          "name": "WhatsApp CLZ N8N 3462332031"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener el texto de salida del nodo anterior\nlet raw = $json.output || \"\";\n\n// 1️⃣ Eliminar los backticks, \"json\\n\", etc.\nraw = raw\n  .replace(/```json/gi, '')\n  .replace(/```/g, '')\n  .trim();\n\n// 2️⃣ Buscar un objeto JSON válido dentro del texto\nlet jsonTextMatch = raw.match(/\\{[\\s\\S]*\\}/);\nif (!jsonTextMatch) {\n  throw new Error(\"No se encontró un objeto JSON válido en la salida del modelo.\");\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(jsonTextMatch[0]);\n} catch (error) {\n  throw new Error(\"Error al parsear el JSON de la IA: \" + error.message);\n}\n\n// 3️⃣ Crear estructura limpia para base de datos\nconst resultado = {\n  nombre: parsed.nombre || \"Desconocido\",\n  puesto: parsed.puesto || \"Vendedor\",\n  puntaje: Number(parsed.puntaje) || 0,\n  recomendacion: parsed.recomendacion || \"Sin definir\",\n  cv_texto: parsed.cv_texto || \"\",\n  promedio_meses_empleos: parsed.promedio_meses_empleos ?? null,\n  dni: parsed.dni ?? null,\n  fecha_evaluacion: new Date().toISOString(),\n};\n\n// 4️⃣ Retornar el resultado para usarlo en el nodo PostgreSQL (Insert)\nreturn [resultado];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        744
+      ],
+      "id": "31b437a5-6ac7-45a6-b894-1e3e78ab8662",
+      "name": "depurar output IA5"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener el texto de salida del nodo anterior\nlet raw = $json.output || \"\";\n\n// 1️⃣ Eliminar los backticks, \"json\\n\", etc.\nraw = raw\n  .replace(/```json/gi, '')\n  .replace(/```/g, '')\n  .trim();\n\n// 2️⃣ Buscar un objeto JSON válido dentro del texto\nlet jsonTextMatch = raw.match(/\\{[\\s\\S]*\\}/);\nif (!jsonTextMatch) {\n  throw new Error(\"No se encontró un objeto JSON válido en la salida del modelo.\");\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(jsonTextMatch[0]);\n} catch (error) {\n  throw new Error(\"Error al parsear el JSON de la IA: \" + error.message);\n}\n\n// 3️⃣ Crear estructura limpia para base de datos\nconst resultado = {\n  nombre: parsed.nombre || \"Desconocido\",\n  puesto: parsed.puesto || \"Vendedor\",\n  puntaje: Number(parsed.puntaje) || 0,\n  recomendacion: parsed.recomendacion || \"Sin definir\",\n  cv_texto: parsed.cv_texto || \"\",\n  promedio_meses_empleos: parsed.promedio_meses_empleos ?? null,\n  dni: parsed.dni ?? null,\n  fecha_evaluacion: new Date().toISOString(),\n};\n\n// 4️⃣ Retornar el resultado para usarlo en el nodo PostgreSQL (Insert)\nreturn [resultado];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        1144
+      ],
+      "id": "02638b9a-a8b8-4a88-9f1c-732282d6c5d7",
+      "name": "depurar output IA7"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener el texto de salida del nodo anterior\nlet raw = $json.output || \"\";\n\n// 1️⃣ Eliminar los backticks, \"json\\n\", etc.\nraw = raw\n  .replace(/```json/gi, '')\n  .replace(/```/g, '')\n  .trim();\n\n// 2️⃣ Buscar un objeto JSON válido dentro del texto\nlet jsonTextMatch = raw.match(/\\{[\\s\\S]*\\}/);\nif (!jsonTextMatch) {\n  throw new Error(\"No se encontró un objeto JSON válido en la salida del modelo.\");\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(jsonTextMatch[0]);\n} catch (error) {\n  throw new Error(\"Error al parsear el JSON de la IA: \" + error.message);\n}\n\n// 3️⃣ Crear estructura limpia para base de datos\nconst resultado = {\n  nombre: parsed.nombre || \"Desconocido\",\n  puesto: parsed.puesto || \"Vendedor\",\n  puntaje: Number(parsed.puntaje) || 0,\n  recomendacion: parsed.recomendacion || \"Sin definir\",\n  cv_texto: parsed.cv_texto || \"\",\n  promedio_meses_empleos: parsed.promedio_meses_empleos ?? null,\n  dni: parsed.dni ?? null,\n  fecha_evaluacion: new Date().toISOString(),\n};\n\n// 4️⃣ Retornar el resultado para usarlo en el nodo PostgreSQL (Insert)\nreturn [resultado];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        1544
+      ],
+      "id": "d0c5f5da-c10b-4778-94bd-14b6b1872e7b",
+      "name": "depurar output IA8"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener el texto de salida del nodo anterior\nlet raw = $json.output || \"\";\n\n// 1️⃣ Eliminar los backticks, \"json\\n\", etc.\nraw = raw\n  .replace(/```json/gi, '')\n  .replace(/```/g, '')\n  .trim();\n\n// 2️⃣ Buscar un objeto JSON válido dentro del texto\nlet jsonTextMatch = raw.match(/\\{[\\s\\S]*\\}/);\nif (!jsonTextMatch) {\n  throw new Error(\"No se encontró un objeto JSON válido en la salida del modelo.\");\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(jsonTextMatch[0]);\n} catch (error) {\n  throw new Error(\"Error al parsear el JSON de la IA: \" + error.message);\n}\n\n// 3️⃣ Crear estructura limpia para base de datos\nconst resultado = {\n  nombre: parsed.nombre || \"Desconocido\",\n  puesto: parsed.puesto || \"Vendedor\",\n  puntaje: Number(parsed.puntaje) || 0,\n  recomendacion: parsed.recomendacion || \"Sin definir\",\n  cv_texto: parsed.cv_texto || \"\",\n  promedio_meses_empleos: parsed.promedio_meses_empleos ?? null,\n  dni: parsed.dni ?? null,\n  fecha_evaluacion: new Date().toISOString(),\n};\n\n// 4️⃣ Retornar el resultado para usarlo en el nodo PostgreSQL (Insert)\nreturn [resultado];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        1944
+      ],
+      "id": "16c910ee-bc2e-404a-9f05-8b55e34c8a94",
+      "name": "depurar output IA9"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "postulantes_evaluaciones",
+          "mode": "list",
+          "cachedResultName": "postulantes_evaluaciones"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $('RecibirInfoPrestashop').item.json.body.nombre }}",
+            "puesto": "={{ $('RecibirInfoPrestashop').item.json.body.puesto }}",
+            "puntaje": "={{ $json.puntaje }}",
+            "recomendacion": "={{ $json.recomendacion }}",
+            "cv_texto": "={{ $json.cv_texto }}",
+            "fecha_evaluacion": "={{ $json.fecha_evaluacion }}",
+            "cvs_links": "={{ $('HTTP Request').item.json.Key }}",
+            "telefono": "={{ $('RecibirInfoPrestashop').item.json.body.telefono }}",
+            "email": "={{ $('RecibirInfoPrestashop').item.json.body.email }}",
+            "localidad": "={{ $('RecibirInfoPrestashop').item.json.body.localidad }}",
+            "promedio_meses_empleos": "={{ $json.promedio_meses_empleos }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puesto",
+              "displayName": "puesto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puntaje",
+              "displayName": "puntaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recomendacion",
+              "displayName": "recomendacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cv_texto",
+              "displayName": "cv_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_evaluacion",
+              "displayName": "fecha_evaluacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fuente",
+              "displayName": "fuente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cvs_links",
+              "displayName": "cvs_links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observaciones",
+              "displayName": "observaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "localidad",
+              "displayName": "localidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "promedio_meses_empleos",
+              "displayName": "promedio_meses_empleos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2160,
+        744
+      ],
+      "id": "81a482c5-bba4-4f3f-a5b6-8e5c20521450",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "nFqo90cHZ3ehf88W",
+          "name": "postgres supabase calzalindo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "postulantes_evaluaciones",
+          "mode": "list",
+          "cachedResultName": "postulantes_evaluaciones"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $('RecibirInfoPrestashop').item.json.body.nombre }}",
+            "puesto": "={{ $('RecibirInfoPrestashop').item.json.body.puesto }}",
+            "puntaje": "={{ $json.puntaje }}",
+            "recomendacion": "={{ $json.recomendacion }}",
+            "cv_texto": "={{ $json.cv_texto }}",
+            "fecha_evaluacion": "={{ $json.fecha_evaluacion }}",
+            "cvs_links": "={{ $('HTTP Request').item.json.Key }}",
+            "telefono": "={{ $('RecibirInfoPrestashop').item.json.body.telefono }}",
+            "email": "={{ $('RecibirInfoPrestashop').item.json.body.email }}",
+            "localidad": "={{ $('RecibirInfoPrestashop').item.json.body.localidad }}",
+            "promedio_meses_empleos": "={{ $json.promedio_meses_empleos }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puesto",
+              "displayName": "puesto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puntaje",
+              "displayName": "puntaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recomendacion",
+              "displayName": "recomendacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cv_texto",
+              "displayName": "cv_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_evaluacion",
+              "displayName": "fecha_evaluacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fuente",
+              "displayName": "fuente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cvs_links",
+              "displayName": "cvs_links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observaciones",
+              "displayName": "observaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "localidad",
+              "displayName": "localidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "promedio_meses_empleos",
+              "displayName": "promedio_meses_empleos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2160,
+        1144
+      ],
+      "id": "d08bf0b3-6205-4dcc-9a6f-f6503fa79716",
+      "name": "Insert rows in a table3",
+      "credentials": {
+        "postgres": {
+          "id": "nFqo90cHZ3ehf88W",
+          "name": "postgres supabase calzalindo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "postulantes_evaluaciones",
+          "mode": "list",
+          "cachedResultName": "postulantes_evaluaciones"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $('RecibirInfoPrestashop').item.json.body.nombre }}",
+            "puesto": "={{ $('RecibirInfoPrestashop').item.json.body.puesto }}",
+            "puntaje": "={{ $json.puntaje }}",
+            "recomendacion": "={{ $json.recomendacion }}",
+            "cv_texto": "={{ $json.cv_texto }}",
+            "fecha_evaluacion": "={{ $json.fecha_evaluacion }}",
+            "cvs_links": "={{ $('HTTP Request').item.json.Key }}",
+            "telefono": "={{ $('RecibirInfoPrestashop').item.json.body.telefono }}",
+            "email": "={{ $('RecibirInfoPrestashop').item.json.body.email }}",
+            "localidad": "={{ $('RecibirInfoPrestashop').item.json.body.localidad }}",
+            "promedio_meses_empleos": "={{ $json.promedio_meses_empleos }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puesto",
+              "displayName": "puesto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puntaje",
+              "displayName": "puntaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recomendacion",
+              "displayName": "recomendacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cv_texto",
+              "displayName": "cv_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_evaluacion",
+              "displayName": "fecha_evaluacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fuente",
+              "displayName": "fuente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cvs_links",
+              "displayName": "cvs_links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observaciones",
+              "displayName": "observaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "localidad",
+              "displayName": "localidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "promedio_meses_empleos",
+              "displayName": "promedio_meses_empleos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2160,
+        1544
+      ],
+      "id": "be993781-612e-4976-9d28-2bba3d51bf43",
+      "name": "Insert rows in a table4",
+      "credentials": {
+        "postgres": {
+          "id": "nFqo90cHZ3ehf88W",
+          "name": "postgres supabase calzalindo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "postulantes_evaluaciones",
+          "mode": "list",
+          "cachedResultName": "postulantes_evaluaciones"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $('RecibirInfoPrestashop').item.json.body.nombre }}",
+            "puesto": "={{ $('RecibirInfoPrestashop').item.json.body.puesto }}",
+            "puntaje": "={{ $json.puntaje }}",
+            "recomendacion": "={{ $json.recomendacion }}",
+            "cv_texto": "={{ $json.cv_texto }}",
+            "fecha_evaluacion": "={{ $json.fecha_evaluacion }}",
+            "cvs_links": "={{ $('HTTP Request').item.json.Key }}",
+            "telefono": "={{ $('RecibirInfoPrestashop').item.json.body.telefono }}",
+            "email": "={{ $('RecibirInfoPrestashop').item.json.body.email }}",
+            "localidad": "={{ $('RecibirInfoPrestashop').item.json.body.localidad }}",
+            "promedio_meses_empleos": "={{ $json.promedio_meses_empleos }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puesto",
+              "displayName": "puesto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puntaje",
+              "displayName": "puntaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recomendacion",
+              "displayName": "recomendacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cv_texto",
+              "displayName": "cv_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_evaluacion",
+              "displayName": "fecha_evaluacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fuente",
+              "displayName": "fuente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cvs_links",
+              "displayName": "cvs_links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observaciones",
+              "displayName": "observaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "localidad",
+              "displayName": "localidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "promedio_meses_empleos",
+              "displayName": "promedio_meses_empleos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2160,
+        1944
+      ],
+      "id": "e58b9e51-9c27-4fc0-a8d8-ad5c8876fe2e",
+      "name": "Insert rows in a table5",
+      "credentials": {
+        "postgres": {
+          "id": "nFqo90cHZ3ehf88W",
+          "name": "postgres supabase calzalindo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "postulantes_evaluaciones",
+          "mode": "list",
+          "cachedResultName": "postulantes_evaluaciones"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $('RecibirInfoPrestashop').item.json.body.nombre }}",
+            "puesto": "={{ $('RecibirInfoPrestashop').item.json.body.puesto }}",
+            "puntaje": "={{ $json.puntaje }}",
+            "recomendacion": "={{ $json.recomendacion }}",
+            "cv_texto": "={{ $json.cv_texto }}",
+            "fecha_evaluacion": "={{ $json.fecha_evaluacion }}",
+            "cvs_links": "={{ $('HTTP Request').item.json.Key }}",
+            "telefono": "={{ $('RecibirInfoPrestashop').item.json.body.telefono }}",
+            "email": "={{ $('RecibirInfoPrestashop').item.json.body.email }}",
+            "localidad": "={{ $('RecibirInfoPrestashop').item.json.body.localidad }}",
+            "promedio_meses_empleos": "={{ $json.promedio_meses_empleos }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puesto",
+              "displayName": "puesto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puntaje",
+              "displayName": "puntaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recomendacion",
+              "displayName": "recomendacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cv_texto",
+              "displayName": "cv_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_evaluacion",
+              "displayName": "fecha_evaluacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fuente",
+              "displayName": "fuente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cvs_links",
+              "displayName": "cvs_links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observaciones",
+              "displayName": "observaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "localidad",
+              "displayName": "localidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "promedio_meses_empleos",
+              "displayName": "promedio_meses_empleos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2160,
+        2344
+      ],
+      "id": "8c62f4ca-2641-4069-a3c3-e3661463add5",
+      "name": "Insert rows in a table11",
+      "credentials": {
+        "postgres": {
+          "id": "nFqo90cHZ3ehf88W",
+          "name": "postgres supabase calzalindo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Enviar whatasapp a peronas rechazadas",
+        "height": 208,
+        "width": 880,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        16,
+        2160
+      ],
+      "typeVersion": 1,
+      "id": "3c2e6390-f285-49a8-91d7-f1ee7b338b9b",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.all().map(item => item.json);\n// Ordenar por fecha de forma descendente (más reciente primero) por defecto\ndata.sort((a, b) => new Date(b.fecha_evaluacion) - new Date(a.fecha_evaluacion));\n\nconst stats = {\n  total: data.length,\n  contratar: data.filter(d => d.puntaje >= 7).length,\n  considerar: data.filter(d => d.puntaje > 5 && d.puntaje < 7).length,\n  noRecomendable: data.filter(d => d.puntaje <= 5).length,\n  promedioGeneral: data.length > 0 ? (data.reduce((sum, d) => sum + (Number(d.puntaje) || 0), 0) / data.length).toFixed(1) : '0.0'\n};\n\nfunction getRecomendacionClass(puntaje) {\n  if (puntaje >= 7) return 'contratar';\n  if (puntaje > 5) return 'considerar';\n  return 'no-recomendable';\n}\n\nfunction getRecomendacionText(puntaje) {\n  if (puntaje >= 7) return 'Contratar';\n  if (puntaje > 5) return 'Considerar';\n  return 'No Recomendable';\n}\n\nfunction getBadgeColor(puntaje) {\n  if (puntaje >= 7) return '#10b981';\n  if (puntaje > 5) return '#f59e0b';\n  return '#ef4444';\n}\n\nfunction generarLinkSupabase(nombre, telefono) {\n  if (!telefono || !nombre) return null;\n  const nombreLimpio = nombre.trim();\n  const telefonoLimpio = telefono.trim();\n  const nombreArchivo = `${nombreLimpio}${telefonoLimpio}.pdf`;\n  const nombreDescarga = encodeURIComponent(nombreArchivo);\n  return `${SUPABASE_URL}/storage/v1/object/public/cvs/${nombreDescarga}?download=${nombreArchivo}`;\n}\n\nfunction escapeHtml(text) {\n  if (!text) return '';\n  return text\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#039;')\n    .replace(/\\n/g, ' ')\n    .replace(/\\r/g, '');\n}\n\nconst SUPABASE_URL = 'https://qzbrmwajddjdqffghwrw.supabase.co';\nconst SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6YnJtd2FqZGRqZHFmZmdod3J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxMzc0ODIsImV4cCI6MjA3NTcxMzQ4Mn0.4XYD2KPllYfCCfq5NOgOvLuCM-LKGADYCgVLZtxk9VU';\nconst TABLA_POSTULANTES = 'postulantes_evaluaciones';\nconst WEBHOOK_RECHAZO_URL = 'https://n8n.calzalindo.com.ar/webhook/rechazo_cliente';\n\nvar html = `\n<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>👥 Dashboard de Recursos Humanos</title>\n  <style>\n    * { margin: 0; padding: 0; box-sizing: border-box; }\n    body {\n      font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\n      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n      padding: 10px;\n      min-height: 100vh;\n    }\n    .container {\n      max-width: 100%;\n      margin: 0 auto;\n      background: white;\n      border-radius: 12px;\n      box-shadow: 0 10px 30px rgba(0,0,0,0.2);\n      overflow: hidden;\n    }\n    .header {\n      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n      color: white;\n      padding: 20px;\n      text-align: center;\n    }\n    .header h1 { font-size: 1.8em; margin-bottom: 5px; }\n    .header p { font-size: 1em; opacity: 0.9; }\n    .stats-grid {\n      display: grid;\n      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));\n      gap: 12px;\n      padding: 15px;\n      background: #f8fafc;\n    }\n    .stat-card {\n      background: white;\n      padding: 15px;\n      border-radius: 10px;\n      box-shadow: 0 2px 4px rgba(0,0,0,0.08);\n      text-align: center;\n      transition: transform 0.3s;\n    }\n    .stat-card:hover { transform: translateY(-3px); }\n    .stat-card .label {\n      font-size: 0.8em;\n      color: #64748b;\n      margin-bottom: 8px;\n      font-weight: 600;\n    }\n    .stat-card .value {\n      font-size: 2em;\n      font-weight: bold;\n      color: #1e293b;\n    }\n    .content {\n      padding: 15px;\n    }\n    .filters {\n      display: flex;\n      gap: 10px;\n      margin-bottom: 15px;\n      flex-wrap: wrap;\n      align-items: center;\n    }\n    .filter-group {\n      display: flex;\n      align-items: center;\n      gap: 6px;\n    }\n    .search-input {\n      padding: 8px 12px;\n      border: 2px solid #e2e8f0;\n      border-radius: 6px;\n      font-size: 0.9em;\n      width: 250px;\n      transition: border-color 0.3s;\n    }\n    .search-input:focus {\n      outline: none;\n      border-color: #667eea;\n    }\n    select {\n      padding: 8px 12px;\n      border: 2px solid #e2e8f0;\n      border-radius: 6px;\n      font-size: 0.9em;\n      background: white;\n      cursor: pointer;\n      transition: border-color 0.3s;\n    }\n    select:focus {\n      outline: none;\n      border-color: #667eea;\n    }\n    .btn-filter {\n      padding: 8px 16px;\n      border: 2px solid #e2e8f0;\n      border-radius: 6px;\n      font-size: 0.9em;\n      background: white;\n      cursor: pointer;\n      transition: all 0.3s;\n      font-weight: 600;\n    }\n    .btn-filter.active {\n      border-color: #667eea;\n      background: #667eea;\n      color: white;\n    }\n    .btn-filter:hover {\n      border-color: #667eea;\n    }\n    .table-container {\n      overflow-x: auto;\n      border-radius: 8px;\n      box-shadow: 0 2px 4px rgba(0,0,0,0.08);\n    }\n    table {\n      width: 100%;\n      border-collapse: collapse;\n      background: white;\n      font-size: 0.9em;\n    }\n    thead {\n      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n      color: white;\n    }\n    th {\n      padding: 10px 8px;\n      text-align: center;\n      font-weight: 600;\n      font-size: 0.85em;\n      white-space: nowrap;\n    }\n    td {\n      padding: 10px 8px;\n      border-bottom: 1px solid #e2e8f0;\n      text-align: center;\n      vertical-align: middle;\n    }\n    tbody tr {\n      transition: background-color 0.2s;\n    }\n    tbody tr:hover {\n      background-color: #f8fafc;\n    }\n    .badge {\n      display: inline-block;\n      padding: 5px 10px;\n      border-radius: 15px;\n      font-size: 0.8em;\n      font-weight: 600;\n      color: white;\n      white-space: nowrap;\n    }\n    .contratar { background-color: #10b981; }\n    .considerar { background-color: #f59e0b; }\n    .no-recomendable { background-color: #ef4444; }\n    .puntaje-box {\n      display: inline-flex;\n      width: 45px;\n      height: 45px;\n      border-radius: 8px;\n      align-items: center;\n      justify-content: center;\n      font-weight: bold;\n      font-size: 1.2em;\n      color: white;\n      margin: 0 auto;\n    }\n    .puntaje-evaluacion {\n      display: inline-block;\n      padding: 3px 8px;\n      border-radius: 10px;\n      font-size: 0.8em;\n      font-weight: 600;\n      color: white;\n      background-color: #3b82f6;\n      margin-left: 5px;\n    }\n    .btn {\n      padding: 6px 12px;\n      border: none;\n      border-radius: 5px;\n      cursor: pointer;\n      font-size: 0.85em;\n      transition: all 0.3s;\n      text-decoration: none;\n      display: inline-block;\n      white-space: nowrap;\n    }\n    .btn-primary {\n      background: #667eea;\n      color: white;\n    }\n    .btn-primary:hover {\n      background: #5568d3;\n    }\n    .btn-secondary {\n      background: #64748b;\n      color: white;\n    }\n    .btn-secondary:hover {\n      background: #475569;\n    }\n    .modal {\n      display: none;\n      position: fixed;\n      top: 0;\n      left: 0;\n      width: 100%;\n      height: 100%;\n      background: rgba(0,0,0,0.7);\n      z-index: 1000;\n      justify-content: center;\n      align-items: center;\n    }\n    .modal-content {\n      background: white;\n      padding: 20px;\n      border-radius: 12px;\n      max-width: 800px;\n      max-height: 80vh;\n      overflow-y: auto;\n      width: 90%;\n    }\n    .modal-header {\n      display: flex;\n      justify-content: space-between;\n      align-items: center;\n      margin-bottom: 15px;\n      padding-bottom: 12px;\n      border-bottom: 2px solid #e2e8f0;\n    }\n    .close-modal {\n      background: #ef4444;\n      color: white;\n      border: none;\n      width: 28px;\n      height: 28px;\n      border-radius: 50%;\n      cursor: pointer;\n      font-size: 1.1em;\n    }\n    .empty-state {\n      text-align: center;\n      padding: 40px 20px;\n      color: #64748b;\n    }\n    .empty-state-icon {\n      font-size: 3em;\n      margin-bottom: 15px;\n    }\n    select.estado-select {\n      padding: 6px 10px;\n      border: 2px solid #e2e8f0;\n      border-radius: 5px;\n      font-size: 0.85em;\n      cursor: pointer;\n      transition: border-color 0.3s;\n    }\n    select.estado-select:focus {\n      outline: none;\n      border-color: #667eea;\n    }\n    .save-section {\n      margin-top: 15px;\n      padding: 15px;\n      background: #f8fafc;\n      border-radius: 8px;\n      display: none;\n    }\n    .save-section.active {\n      display: block;\n    }\n    textarea {\n      width: 100%;\n      padding: 10px;\n      border: 2px solid #e2e8f0;\n      border-radius: 6px;\n      font-family: inherit;\n      font-size: 0.9em;\n      resize: vertical;\n      min-height: 80px;\n    }\n    textarea:focus {\n      outline: none;\n      border-color: #667eea;\n    }\n    .button-group {\n      display: flex;\n      gap: 8px;\n      margin-top: 12px;\n    }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>👥 Dashboard de Recursos Humanos</h1>\n      <p>Calza Lindo - Sistema de Evaluación de Postulantes</p>\n    </div>\n    \n    <div class=\"stats-grid\">\n      <div class=\"stat-card\">\n        <div class=\"label\">Total Evaluaciones</div>\n        <div class=\"value\">${stats.total}</div>\n      </div>\n      <div class=\"stat-card\">\n        <div class=\"label\">✅ Contratar (≥7)</div>\n        <div class=\"value\">${stats.contratar}</div>\n      </div>\n      <div class=\"stat-card\">\n        <div class=\"label\">⚠️ Considerar (5-7)</div>\n        <div class=\"value\">${stats.considerar}</div>\n      </div>\n      <div class=\"stat-card\">\n        <div class=\"label\">❌ No Recomendable (≤5)</div>\n        <div class=\"value\">${stats.noRecomendable}</div>\n      </div>\n      <div class=\"stat-card\">\n        <div class=\"label\">📊 Promedio General</div>\n        <div class=\"value\">${stats.promedioGeneral}</div>\n      </div>\n    </div>\n\n    <div class=\"content\">\n      <h2 style=\"margin-bottom: 15px; font-size: 1.3em;\">📋 Listado de Postulantes</h2>\n      \n      <div class=\"filters\">\n        <div class=\"filter-group\">\n          <label>🔍</label>\n          <input type=\"text\" id=\"busquedaNombre\" class=\"search-input\" placeholder=\"Buscar por nombre...\" oninput=\"filtrarTabla()\">\n        </div>\n        <div class=\"filter-group\">\n          <label>📊</label>\n          <select id=\"filtroEstado\" onchange=\"filtrarTabla()\">\n            <option value=\"\">Todos los estados</option>\n            <option value=\"sin entrevistar\">Sin Entrevistar</option>\n            <option value=\"1era entrevista\">1era Entrevista</option>\n            <option value=\"2da entrevista\">2da Entrevista</option>\n            <option value=\"contratado\">Contratado</option>\n            <option value=\"rechazado\">Rechazado</option>\n          </select>\n        </div>\n        <div class=\"filter-group\">\n          <label>🔽</label>\n          <select id=\"filtroPuesto\" onchange=\"filtrarTabla()\">\n            <option value=\"\">Todos los puestos</option>\n          </select>\n        </div>\n        <div class=\"filter-group\">\n          <label>📍</label>\n          <select id=\"filtroLocalidad\" onchange=\"filtrarTabla()\">\n            <option value=\"\">Todas las localidades</option>\n          </select>\n        </div>\n        <div class=\"filter-group\" style=\"margin-left: 10px;\">\n          <button class=\"btn-filter active\" data-recomendacion=\"\" onclick=\"filtrarPorRecomendacion(this, '')\">Todos</button>\n          <button class=\"btn-filter\" data-recomendacion=\"contratar\" onclick=\"filtrarPorRecomendacion(this, 'contratar')\">✅ Contratar</button>\n          <button class=\"btn-filter\" data-recomendacion=\"considerar\" onclick=\"filtrarPorRecomendacion(this, 'considerar')\">⚠️ Considerar</button>\n          <button class=\"btn-filter\" data-recomendacion=\"no-recomendable\" onclick=\"filtrarPorRecomendacion(this, 'no-recomendable')\">❌ No Recomendable</button>\n        </div>\n      </div>\n\n      <div class=\"table-container\">\n        <table id=\"tablaPostulantes\">\n          <thead>\n            <tr>\n              <th>Nombre</th>\n              <th>Teléfono</th>\n              <th>Localidad</th>\n              <th>Puesto</th>\n              <th>Puntaje</th>\n              <th>Puntaje Respuestas</th>\n              <th>Recomendación</th>\n              <th>Estado</th>\n              <th>Fecha Evaluación</th>\n              <th>Ver CV</th>\n              <th>Observaciones</th>\n              <th>Descargar</th>\n            </tr>\n          </thead>\n          <tbody>\n`;\n\nif (data.length > 0) {\n  for (let i = 0; i < data.length; i++) {\n    const r = data[i];\n    const clase = getRecomendacionClass(r.puntaje || 0);\n    const recomText = getRecomendacionText(r.puntaje || 0);\n    const badgeColor = getBadgeColor(r.puntaje || 0);\n    const fecha = new Date(r.fecha_evaluacion).toLocaleString('es-AR');\n    const linkCV = generarLinkSupabase(r.nombre, r.telefono);\n    const estadoActual = r.estado || 'sin entrevistar';\n    const recordId = r.id || '';\n    const nombreEscapado = escapeHtml(r.nombre || 'Desconocido');\n    const textoEscapado = escapeHtml(r.cv_texto || 'Sin texto disponible');\n    const observacionesEscapadas = escapeHtml(r.observaciones || '');\n\n    html += `\n            <tr data-estado=\"${estadoActual}\" data-puesto=\"${r.puesto || ''}\" data-localidad=\"${r.localidad || ''}\" data-recomendacion=\"${clase}\" data-nombre=\"${r.nombre ? r.nombre.toLowerCase() : ''}\">\n              <td style=\"text-align: left;\"><strong>${r.nombre || 'Desconocido'}</strong></td>\n              <td>${r.telefono || 'N/A'}</td>\n              <td>${r.localidad || 'N/A'}</td>\n              <td>${r.puesto || 'N/A'}</td>\n              <td>\n                <div class=\"puntaje-box\" style=\"background-color: ${badgeColor};\">\n                  ${r.puntaje || 0}\n                </div>\n              </td>\n              <td>\n                ${r.puntaje_evaluacion !== undefined && r.puntaje_evaluacion !== null ? \n                  '<div class=\"puntaje-evaluacion\">' + r.puntaje_evaluacion + '</div>' : \n                  '—'}\n              </td>\n              <td><span class=\"badge ${clase}\">${recomText}</span></td>\n              <td>\n                <select class=\"estado-select\" data-record-id=\"${recordId}\" data-nombre=\"${nombreEscapado}\" data-telefono=\"${r.telefono || ''}\" data-estado-original=\"${estadoActual}\" onchange=\"cambiarEstado(this)\">\n                  <option value=\"sin entrevistar\" ${estadoActual === 'sin entrevistar' ? 'selected' : ''}>Sin Entrevistar</option>\n                  <option value=\"1era entrevista\" ${estadoActual === '1era entrevista' ? 'selected' : ''}>1era Entrevista</option>\n                  <option value=\"2da entrevista\" ${estadoActual === '2da entrevista' ? 'selected' : ''}>2da Entrevista</option>\n                  <option value=\"contratado\" ${estadoActual === 'contratado' ? 'selected' : ''}>Contratado</option>\n                  <option value=\"rechazado\" ${estadoActual === 'rechazado' ? 'selected' : ''}>Rechazado</option>\n                </select>\n              </td>\n              <td style=\"font-size: 0.85em;\">${fecha}</td>\n              <td>\n                <button class=\"btn btn-primary\" onclick='verCV(\\`${textoEscapado}\\`, \"${nombreEscapado}\")'>👁️</button>\n              </td>\n              <td>\n                <button class=\"btn btn-primary\" onclick='editarObservaciones(\"${recordId}\", \\`${observacionesEscapadas}\\`, \"${nombreEscapado}\")'>📝</button>\n              </td>\n              <td>\n                ${linkCV ? `<a href=\"${linkCV}\" class=\"btn btn-secondary\" target=\"_blank\">📄</a>` : '—'}\n              </td>\n            </tr>\n    `;\n  }\n} else {\n  html += `\n            <tr>\n              <td colspan=\"12\">\n                <div class=\"empty-state\">\n                  <div class=\"empty-state-icon\">📭</div>\n                  <h3>No hay evaluaciones aún</h3>\n                </div>\n              </td>\n            </tr>\n  `;\n}\n\nhtml += `\n          </tbody>\n        </table>\n      </div>\n    </div>\n  </div>\n\n  <div id=\"modalCV\" class=\"modal\" onclick=\"cerrarModal(event)\">\n    <div class=\"modal-content\" onclick=\"event.stopPropagation()\">\n      <div class=\"modal-header\">\n        <h2 id=\"modalTitulo\">CV</h2>\n        <button class=\"close-modal\" onclick=\"cerrarModalCV()\">×</button>\n      </div>\n      <div id=\"modalCuerpo\" style=\"white-space: pre-wrap; line-height: 1.6;\"></div>\n    </div>\n  </div>\n\n  <div id=\"modalObservaciones\" class=\"modal\" onclick=\"cerrarModal(event)\">\n    <div class=\"modal-content\" onclick=\"event.stopPropagation()\">\n      <div class=\"modal-header\">\n        <h2 id=\"modalObservacionesTitulo\">Observaciones</h2>\n        <button class=\"close-modal\" onclick=\"cerrarModalObservaciones()\">×</button>\n      </div>\n      <div id=\"modalObservacionesCuerpo\">\n        <textarea id=\"observacionesTextarea\" placeholder=\"Escribe tus observaciones aquí...\"></textarea>\n        <div class=\"button-group\">\n          <button class=\"btn btn-primary\" onclick=\"guardarObservaciones()\">💾 Guardar</button>\n          <button class=\"btn btn-secondary\" onclick=\"cerrarModalObservaciones()\">❌ Cancelar</button>\n        </div>\n      </div>\n    </div>\n  </div>\n\n  <script>\n    const SUPABASE_URL = '${SUPABASE_URL}';\n    const SUPABASE_ANON_KEY = '${SUPABASE_ANON_KEY}';\n    const TABLA = '${TABLA_POSTULANTES}';\n    const WEBHOOK_RECHAZO = '${WEBHOOK_RECHAZO_URL}';\n    let recordIdActual = '';\n    let estadoCambios = {};\n    let filtroRecomendacionActual = '';\n\n    // Llenar filtros de puesto y localidad\n    window.addEventListener('DOMContentLoaded', () => {\n      const puestos = new Set();\n      const localidades = new Set();\n      \n      document.querySelectorAll('#tablaPostulantes tbody tr').forEach(tr => {\n        const puesto = tr.dataset.puesto;\n        const localidad = tr.dataset.localidad;\n        if (puesto) puestos.add(puesto);\n        if (localidad) localidades.add(localidad);\n      });\n\n      const filtroPuesto = document.getElementById('filtroPuesto');\n      const filtroLocalidad = document.getElementById('filtroLocalidad');\n\n      [...puestos].sort().forEach(p => {\n        const opt = document.createElement('option');\n        opt.value = p;\n        opt.textContent = p;\n        filtroPuesto.appendChild(opt);\n      });\n\n      [...localidades].sort().forEach(l => {\n        const opt = document.createElement('option');\n        opt.value = l;\n        opt.textContent = l;\n        filtroLocalidad.appendChild(opt);\n      });\n    });\n\n    function filtrarPorRecomendacion(button, recomendacion) {\n      // Actualizar botones activos\n      document.querySelectorAll('.btn-filter').forEach(btn => {\n        btn.classList.remove('active');\n      });\n      button.classList.add('active');\n      \n      filtroRecomendacionActual = recomendacion;\n      filtrarTabla();\n    }\n\n    function filtrarTabla() {\n      const estadoSeleccionado = document.getElementById('filtroEstado').value.toLowerCase();\n      const puestoSeleccionado = document.getElementById('filtroPuesto').value;\n      const localidadSeleccionada = document.getElementById('filtroLocalidad').value;\n      const busquedaNombre = document.getElementById('busquedaNombre').value.toLowerCase().trim();\n\n      document.querySelectorAll('#tablaPostulantes tbody tr').forEach(tr => {\n        const estadoFila = tr.dataset.estado?.toLowerCase() || '';\n        const puestoFila = tr.dataset.puesto || '';\n        const localidadFila = tr.dataset.localidad || '';\n        const recomendacionFila = tr.dataset.recomendacion || '';\n        const nombreFila = tr.dataset.nombre || '';\n\n        const coincideEstado = !estadoSeleccionado || estadoFila === estadoSeleccionado;\n        const coincidePuesto = !puestoSeleccionado || puestoFila === puestoSeleccionado;\n        const coincideLocalidad = !localidadSeleccionada || localidadFila === localidadSeleccionada;\n        const coincideRecomendacion = !filtroRecomendacionActual || recomendacionFila === filtroRecomendacionActual;\n        const coincideNombre = !busquedaNombre || nombreFila.includes(busquedaNombre);\n\n        if (coincideEstado && coincidePuesto && coincideLocalidad && coincideRecomendacion && coincideNombre) {\n          tr.style.display = '';\n        } else {\n          tr.style.display = 'none';\n        }\n      });\n    }\n\n    function verCV(texto, nombre) {\n      document.getElementById('modalTitulo').textContent = 'CV de ' + nombre;\n      document.getElementById('modalCuerpo').textContent = texto;\n      document.getElementById('modalCV').style.display = 'flex';\n    }\n\n    function cerrarModalCV() {\n      document.getElementById('modalCV').style.display = 'none';\n    }\n\n    function editarObservaciones(recordId, observaciones, nombre) {\n      recordIdActual = recordId;\n      document.getElementById('modalObservacionesTitulo').textContent = 'Observaciones - ' + nombre;\n      document.getElementById('observacionesTextarea').value = observaciones;\n      document.getElementById('modalObservaciones').style.display = 'flex';\n    }\n\n    function cerrarModalObservaciones() {\n      document.getElementById('modalObservaciones').style.display = 'none';\n      recordIdActual = '';\n    }\n\n    function cerrarModal(event) {\n      if (event.target.classList.contains('modal')) {\n        event.target.style.display = 'none';\n      }\n    }\n\n    async function guardarObservaciones() {\n      const observaciones = document.getElementById('observacionesTextarea').value;\n      \n      try {\n        const response = await fetch(\\`\\${SUPABASE_URL}/rest/v1/\\${TABLA}?id=eq.\\${recordIdActual}\\`, {\n          method: 'PATCH',\n          headers: {\n            'Content-Type': 'application/json',\n            'apikey': SUPABASE_ANON_KEY,\n            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,\n            'Prefer': 'return=minimal'\n          },\n          body: JSON.stringify({ observaciones })\n        });\n\n        if (response.ok) {\n          alert('✅ Observaciones guardadas exitosamente');\n          cerrarModalObservaciones();\n          location.reload();\n        } else {\n          throw new Error('Error al guardar');\n        }\n      } catch (error) {\n        console.error('Error:', error);\n        alert('❌ Error al guardar las observaciones');\n      }\n    }\n\n    async function cambiarEstado(selectElement) {\n      const recordId = selectElement.dataset.recordId;\n      const nuevoEstado = selectElement.value;\n      const estadoOriginal = selectElement.dataset.estadoOriginal;\n      const nombre = selectElement.dataset.nombre;\n      const telefono = selectElement.dataset.telefono;\n\n      // Si el nuevo estado es \"rechazado\", enviar notificación\n      if (nuevoEstado === 'rechazado') {\n        try {\n          // Enviar POST al webhook\n          await fetch(WEBHOOK_RECHAZO, {\n            method: 'POST',\n            headers: {\n              'Content-Type': 'application/json'\n            },\n            body: JSON.stringify({\n              nombre: nombre,\n              telefono: telefono\n            })\n          });\n          console.log('✅ Notificación de rechazo enviada');\n        } catch (error) {\n          console.error('❌ Error al enviar notificación de rechazo:', error);\n          // Continuar con el cambio de estado aunque falle la notificación\n        }\n      }\n\n      // Actualizar el estado en Supabase\n      try {\n        const response = await fetch(\\`\\${SUPABASE_URL}/rest/v1/\\${TABLA}?id=eq.\\${recordId}\\`, {\n          method: 'PATCH',\n          headers: {\n            'Content-Type': 'application/json',\n            'apikey': SUPABASE_ANON_KEY,\n            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,\n            'Prefer': 'return=minimal'\n          },\n          body: JSON.stringify({ estado: nuevoEstado })\n        });\n\n        if (response.ok) {\n          // Actualizar el atributo data-estado-original\n          selectElement.dataset.estadoOriginal = nuevoEstado;\n          // Actualizar el atributo data-estado del tr\n          selectElement.closest('tr').dataset.estado = nuevoEstado;\n          alert('✅ Estado actualizado exitosamente' + (nuevoEstado === 'rechazado' ? ' y notificación enviada' : ''));\n        } else {\n          throw new Error('Error al actualizar estado');\n        }\n      } catch (error) {\n        console.error('Error:', error);\n        alert('❌ Error al actualizar el estado');\n        // Revertir el select al valor original\n        selectElement.value = estadoOriginal;\n      }\n    }\n  </script>\n</body>\n</html>\n`;\n\nreturn [{ json: { html } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        2432
+      ],
+      "id": "0aa33834-f89b-4705-9d48-fc5f61fa931b",
+      "name": "Generar HTML Dashboard"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1656,
+        2864
+      ],
+      "id": "64a65783-07be-4d19-8014-8e96e4d84cd7",
+      "name": "OpenAI Chat Model7",
+      "credentials": {
+        "openAiApi": {
+          "id": "y24XiTpiUvoN6ssC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener el texto de salida del nodo anterior\nlet raw = $json.output || \"\";\n\n// 1️⃣ Eliminar los backticks, \"json\\n\", etc.\nraw = raw\n  .replace(/```json/gi, '')\n  .replace(/```/g, '')\n  .trim();\n\n// 2️⃣ Buscar un objeto JSON válido dentro del texto\nlet jsonTextMatch = raw.match(/\\{[\\s\\S]*\\}/);\nif (!jsonTextMatch) {\n  throw new Error(\"No se encontró un objeto JSON válido en la salida del modelo.\");\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(jsonTextMatch[0]);\n} catch (error) {\n  throw new Error(\"Error al parsear el JSON de la IA: \" + error.message);\n}\n\n// 3️⃣ Crear estructura limpia para base de datos\nconst resultado = {\n  nombre: parsed.nombre || \"Desconocido\",\n  puesto: parsed.puesto || \"Vendedor\",\n  puntaje: Number(parsed.puntaje) || 0,\n  recomendacion: parsed.recomendacion || \"Sin definir\",\n  cv_texto: parsed.cv_texto || \"\",\n  promedio_meses_empleos: parsed.promedio_meses_empleos ?? null,\n  dni: parsed.dni ?? null,\n  fecha_evaluacion: new Date().toISOString(),\n};\n\n// 4️⃣ Retornar el resultado para usarlo en el nodo PostgreSQL (Insert)\nreturn [resultado];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        2744
+      ],
+      "id": "3a8c0952-7c89-4d58-9e3c-5e7467f5b9ac",
+      "name": "depurar output IA10"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "postulantes_evaluaciones",
+          "mode": "list",
+          "cachedResultName": "postulantes_evaluaciones"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $('RecibirInfoPrestashop').item.json.body.nombre }}",
+            "puesto": "={{ $('RecibirInfoPrestashop').item.json.body.puesto }}",
+            "puntaje": "={{ $json.puntaje }}",
+            "recomendacion": "={{ $json.recomendacion }}",
+            "cv_texto": "={{ $json.cv_texto }}",
+            "fecha_evaluacion": "={{ $json.fecha_evaluacion }}",
+            "cvs_links": "={{ $('HTTP Request').item.json.Key }}",
+            "telefono": "={{ $('RecibirInfoPrestashop').item.json.body.telefono }}",
+            "email": "={{ $('RecibirInfoPrestashop').item.json.body.email }}",
+            "localidad": "={{ $('RecibirInfoPrestashop').item.json.body.localidad }}",
+            "promedio_meses_empleos": "={{ $json.promedio_meses_empleos }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puesto",
+              "displayName": "puesto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puntaje",
+              "displayName": "puntaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recomendacion",
+              "displayName": "recomendacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cv_texto",
+              "displayName": "cv_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_evaluacion",
+              "displayName": "fecha_evaluacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fuente",
+              "displayName": "fuente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cvs_links",
+              "displayName": "cvs_links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observaciones",
+              "displayName": "observaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "localidad",
+              "displayName": "localidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "promedio_meses_empleos",
+              "displayName": "promedio_meses_empleos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2160,
+        2744
+      ],
+      "id": "d06949b2-0d2e-4a43-b47c-12e9b0fbcc30",
+      "name": "Insert rows in a table6",
+      "credentials": {
+        "postgres": {
+          "id": "nFqo90cHZ3ehf88W",
+          "name": "postgres supabase calzalindo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sos un analista de recursos humanos especializado en selección de personal para puestos híbridos de logística, depósito, stock y soporte administrativo de compras.\n\nTu tarea es evaluar el perfil de un candidato a partir del texto de su currículum (CV) y asignarle una puntuación del 1 al 10 según su grado de ajuste al siguiente perfil de puesto:\n\nCV del candidato:\n{{ $('extraer de pdf scaneado').item.json.pages[0].markdown }}\no\n{{ $json.text }}\n\nPUESTO: LOGÍSTICA / DEPÓSITO / SOPORTE DE COMPRAS – CALZA LINDO\nMisión\n\nAsegurar un flujo eficiente de mercadería entre depósitos y puntos de venta, garantizar el control de stock, la correcta recepción y despacho de productos, y brindar soporte administrativo básico al área de compras para mantener actualizados proveedores, remitos, órdenes y documentación.\n\nObjetivos\n\nGarantizar la disponibilidad oportuna de productos.\n\nControlar y mantener actualizado el stock.\n\nAsegurar orden, limpieza y clasificación correcta de mercadería.\n\nAsistir administrativamente en la carga de órdenes, seguimiento a proveedores y documentación.\n\nOptimizar tiempos en recepción, transferencia y preparación de pedidos.\n\nResponsabilidades principales\n\nRecepcionar mercadería y almacenarla correctamente el mismo día.\n\nPreparar, despachar y controlar pedidos entre depósitos y locales.\n\nReponer mercadería según cronograma interno.\n\nControlar pares, faltantes, productos dañados y registrar en sistema.\n\nCargar y actualizar órdenes de compra, remitos y facturas.\n\nRealizar seguimiento de pedidos a proveedores.\n\nColaborar en comparativa básica de precios y condiciones comerciales.\n\nMantener el depósito limpio, ordenado y cerrado correctamente al finalizar la jornada.\n\nIndicadores de desempeño\n\nEficiencia en inventario, exactitud en carga de datos, cumplimiento de plazos, orden, atención de comandas, reducción de errores y comunicación eficaz.\n\nRequisitos\n\nSecundario completo.\n\nExperiencia en logística, depósito, reposición, control de stock o compras.\n\nResidencia en Venado Tuerto (Santa Fe).\n\nDisponibilidad full time y sábados.\n\nManejo de herramientas informáticas y sistemas de gestión.\n\nCapacidad para manipular productos de peso medio.\n\nCompetencias requeridas\n\nProactividad (5)\n\nOrganización y planificación (5)\n\nComunicación efectiva (5)\n\nTrabajo en equipo (4)\n\nResponsabilidad y compromiso (4)\n\nResolución rápida de problemas (4)\n\nGestión de inventario (4)\n\nControl de calidad (5)\n\nPreparación de pedidos (4)\n\nNociones administrativas básicas / carga de datos (4)\n\nCálculos adicionales\n\nSi el CV contiene fechas de inicio y fin:\n\nCalcular duración de cada empleo en meses.\n\nCalcular promedio total de permanencia laboral.\n\nExtraer número de DNI si aparece.\n\nFORMATO DE SALIDA (OBLIGATORIO – NO AGREGAR NADA FUERA DEL JSON)\n\n{\n\"nombre\": \"nombre del candidato\",\n\"puesto\": \"logística\",\n\"puntaje\": 0,\n\"cv_texto\": \"{{ $json.text }}\",\n\"promedio_meses_empleos\": \"numero o null\",\n\"dni\": \"numero o null\",\n\"recomendacion\": \"Contratar / Considerar / No recomendable\"\n}\n\nPonderación\n\nExperiencia en logística, depósito, compras o manejo de mercadería (40%)\n\nCompetencias blandas y organización (30%)\n\nConocimientos técnicos y administrativos (15%)\n\nDisponibilidad y residencia (15%)\n\nSé objetivo y no inventes datos.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        2640
+      ],
+      "id": "ca4b09ea-f4ac-4248-92b1-7e144bf0a41f",
+      "name": "logistica"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sos un analista de recursos humanos especializado en selección de personal para el área comercial.\n\nTu tarea es evaluar el perfil de un candidato a partir del texto de su currículum (CV) y asignarle una puntuación del 1 al 10 según su grado de ajuste al siguiente perfil de puesto:\n\nCV del cliente: CV del candidato: {{ $('extraer de pdf scaneado').item.json.pages[0].markdown }} o de {{ $json.text }}\n\n---\n\nEMPRESA\t\tDEPARTAMENTO  /ÁREA\t\tFECHA\nCalzalindo \t\tINFRAESTRUCTURA Y MANTENIMIENTO \t\t12/05/2025\nNOMBRE DEL PUESTO:\tMANTENIMIENTO JUNIOR \nREPORTA A:\tDIRECTORIO \nCANTIDAD DE REPORTES : \t●\t1\n\nMisión del Puesto\nGarantizar el buen estado, funcionamiento y seguridad de las instalaciones, mobiliario, equipos y recursos físicos de los puntos de venta, almacenes y oficinas de Calzalindo, mediante tareas de mantenimiento preventivo y correctivo, contribuyendo a una experiencia positiva para clientes y un entorno laboral eficiente para el equipo.\n\nObjetivos \nEjecutar actividades de mantenimiento preventivo y correctivo en las instalaciones físicas de la empresa, incluyendo tiendas, oficinas y almacenes, asegurando que se encuentren en condiciones óptimas de funcionamiento. También busca atender de manera oportuna los reportes de fallas o desperfectos que puedan afectar la operación o la experiencia del cliente.\n\n\nEMPRESA\t\tDEPARTAMENTO  /ÁREA\t\tFECHA\nCalzalindo \t\tINFRAESTRUCTURA Y MANTENIMIENTO \t\t12/05/2025\nNOMBRE DEL PUESTO:\tMANTENIMIENTO JUNIOR \nREPORTA A:\tDIRECTORIO \nCANTIDAD DE REPORTES : \t●\t1\n\nMisión del Puesto\nGarantizar el buen estado, funcionamiento y seguridad de las instalaciones, mobiliario, equipos y recursos físicos de los puntos de venta, almacenes y oficinas de Calzalindo, mediante tareas de mantenimiento preventivo y correctivo, contribuyendo a una experiencia positiva para clientes y un entorno laboral eficiente para el equipo.\n\nObjetivos \nEjecutar actividades de mantenimiento preventivo y correctivo en las instalaciones físicas de la empresa, incluyendo tiendas, oficinas y almacenes, asegurando que se encuentren en condiciones óptimas de funcionamiento. También busca atender de manera oportuna los reportes de fallas o desperfectos que puedan afectar la operación o la experiencia del cliente.\n\n1\t\tResponsabilidades y tareas\n\nResponsabilidad\tTareas\n1.\tRealizar mantenimiento preventivo y correctivo en infraestructura.\t●\tCumplir con normas de seguridad e higiene.\n●\tCambiar lámparas, reparar enchufes, arreglar cerraduras o grifería.\n2.\tColaborar en la instalación o traslado de mobiliario y equipos.\t●\tAyudar en el armado de estanterías, escritorios o mostradores.\n●\tMover equipos o muebles entre áreas según indicaciones.\n3.\tDetectar y reportar fallas en instalaciones físicas.\t●\tRevisar periódicamente el estado de los locales.\n●\tInformar al supervisor sobre desperfectos encontrados.\n4.\tAtender pedidos de reparación en tiendas, oficinas o depósitos.\t●\tResponder a reportes internos de fallas (ej. pérdida de agua, cables sueltos).\n●\tRealizar arreglos menores sin necesidad de técnicos externos.\n5.\tMantener el orden y limpieza en su área de trabajo.\t●\tLimpiar herramientas y guardar materiales al finalizar las tareas.\n●\tSeñalizar adecuadamente áreas en reparación.\n\n2\t\tIndicadores de desempeño del puesto\n\nCumplimiento de tareas asignadas en tiempo y forma\nTiempo promedio de respuesta ante fallas reportadas\nCantidad de intervenciones exitosas sin recurrir a técnicos externos\nCumplimiento de normas de seguridad e higiene\n\n3\t\tPrincipales decisiones que se toman en su puesto\nDECISIONES\tDETERMINAR LA IMPORTACIA:\nALTO/MEDIO/BAJO \nSelección de herramientas o materiales básicos para el trabajo\tMEDIO\nInformar necesidad de intervención externa o derivación.\tALTO \nSugerir mejoras simples en el uso o mantenimiento de instalaciones.\tBAJO\nPriorizar tareas cuando hay múltiples pedidos simples\tMEDIO \n\n4\t\tSupervisión / Manejo de reportes\nGRADO\tDESCRIPCIÓN\tMARCAR CON UNA “x” LO QUE CORRESPONDA\n1\tSin personas a cargo. \tX\n2\tA cargo de algunas personas (no más de 2) \t\n3\tManejo de un grupo de trabajo. \t\n\nPERFIL DE LA POSICIÓN\n\n5\t\tRequisitos para el Puesto\n\nEDUCACIÓN (títulos)\nTítulo secundario.\n\nEXPERIENCIA\nPreferentemente con experiencia en mantenimiento básico. \n\n6\t\tPerfil de Competencias para el Puesto\n\nCompetencias GENÉRICAS\tNivel Requerido\n(1 a 5)\nPROACTIVIDAD\t5\nTRABAJO EN EQUIPO\t4\nTOLERANCIA A LA PRESIÓN\t2\nRESLUCIÓN RÁPIDA DE PROBLEMAS \t5\nPRACTICIDAD\t4\n\nCompetencias TÉCNICAS\tNivel Requerido por el puesto\n(1 a 5)\nConocimientos básicos en electricidad y plomería  \t3\nConocimiento en reparación y mantenimiento mobiliario \t5\nConocimiento en Básicos de herramientas \t4\n\n\n6\t\tPerfil de Competencias para el Puesto\nLugar de trabajo \tVenado tuerto – Provincia de Santa Fe\nHorarios: \tFull time \nDisponibilidad los sábados \tSi \nOtras condiciones \tManejo de productos de peso mediano y alto \n\n\n\n\nFecha de Actualización: 12/05/2025\n\nValidado por: Spessot, Maitena\n\n\n---\n\nUsá esta información para evaluar al candidato. El texto del CV será proporcionado a continuación.\n\nAdemás, si el CV contiene fechas de inicio y fin de empleos anteriores, calculá:\n- La duración de cada empleo (en meses).\n- El promedio total de permanencia laboral del candidato.\nIncluí ese valor en el JSON final.\n\nExtraé también el número de DNI si aparece en el CV.\n\nTu salida debe tener este formato JSON (no agregues texto fuera del JSON):\n\n{\n  \"nombre\": \"nombre del candidato\",\n  \"puesto\": \"depósito\",\n  \"puntaje\": 0,\n  \"cv_texto\": \"{{ $json.text }}\",\n  \"promedio_meses_empleos\": \"numero o null\",\n  \"dni\": \"numero o null\",\n  \"recomendacion\": \"Contratar (si el puntaje >=7) / Considerar (puntaje >5) / No recomendable (puntaje <=5)\"\n}\n\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        2240
+      ],
+      "id": "6924d80e-c0c9-43ed-bb4b-9f0948c8bb4e",
+      "name": "mantenimiento"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sos un analista de recursos humanos especializado en selección de personal para el área administrativa y de compras.\nTu tarea es evaluar el perfil de un candidato a partir del texto de su currículum (CV) y asignarle una puntuación del 1 al 10 según su grado de ajuste al siguiente perfil de puesto:\n\nCV del candidato: {{ $('extraer de pdf scaneado').item.json.pages[0].markdown }} o de {{ $json.text }}\n\n---\n\n**PUESTO:** COMPRAS JUNIOR – CALZA LINDO\n\n**Misión:**\nBrindar soporte operativo y administrativo al área de compras, colaborando en la gestión eficiente de adquisiciones de productos y materiales necesarios para la operación comercial, asegurando la disponibilidad oportuna del stock con foco en la calidad, tiempos y costos.\n\n**Objetivos:**\n\n* Asistir en la ejecución del proceso de compras de manera organizada y eficiente.\n* Mantener actualizada la información de proveedores, órdenes de compra y entregas.\n* Asegurar el cumplimiento de los procedimientos internos del área.\n* Optimizar la comunicación con proveedores para garantizar entregas en tiempo y forma.\n* Colaborar en el análisis de precios y condiciones comerciales.\n* Garantizar el etiquetado correcto de los productos según las normas internas.\n\n**Responsabilidades principales:**\n\n* Cargar y actualizar órdenes de compra en el sistema.\n* Realizar el seguimiento de pedidos a proveedores.\n* Gestionar documentación relacionada: remitos, facturas, comprobantes.\n* Actualizar bases de datos de proveedores.\n* Etiquetar productos recibidos según estándares internos.\n* Controlar stock en conjunto con depósito.\n* Solicitar cotizaciones y comparar presupuestos bajo supervisión.\n* Brindar soporte administrativo general al área.\n\n**Indicadores de desempeño:**\nExactitud en carga de datos, actualización de proveedores, reducción de errores, cumplimiento de plazos, comunicación eficaz, organización documental.\n\n**Requisitos:**\n\n* Educación: Secundario completo (excluyente).\n* Deseable: formación terciaria o universitaria en Administración, Logística, Comercialización o carreras afines.\n* Experiencia: al menos 1 año en puestos similares.\n* Lugar: Venado Tuerto (Santa Fe).\n* Disponibilidad full time y los sábados.\n* Manejo de herramientas informáticas y sistemas de gestión.\n\n**Competencias requeridas:**\n\n* Proactividad (nivel 5)\n* Trabajo en equipo (nivel 4)\n* Tolerancia a la presión (nivel 2)\n* Resolución rápida de problemas (nivel 5)\n* Conocimientos informáticos básicos (nivel 4)\n* Seguimiento de stock (nivel 3)\n* Comparativa de precios y condiciones comerciales (nivel 4)\n\n---\n\nUsá esta información para evaluar al candidato. El texto del CV será proporcionado a continuación.\n\nAdemás, si el CV contiene fechas de inicio y fin de empleos anteriores, calculá:\n- La duración de cada empleo (en meses).\n- El promedio total de permanencia laboral del candidato.\nIncluí ese valor en el JSON final.\n\nExtraé también el número de DNI si aparece en el CV.\n\nTu salida debe tener este formato JSON (no agregues texto fuera del JSON):\n\n{\n  \"nombre\": \"nombre del candidato\",\n  \"puesto\": \"depósito\",\n  \"puntaje\": 0,\n  \"cv_texto\": \"{{ $json.text }}\",\n  \"promedio_meses_empleos\": \"numero o null\",\n  \"dni\": \"numero o null\",\n  \"recomendacion\": \"Contratar (si el puntaje >=7) / Considerar (puntaje >5) / No recomendable (puntaje <=5)\"\n}\n\n\n**Ponderá los siguientes factores:**\n\n* Experiencia en compras, administración o gestión de stock (40%)\n* Competencias blandas y técnicas alineadas (30%)\n* Formación y conocimientos informáticos (15%)\n* Disponibilidad, residencia y adecuación al puesto (15%)\n\nSé objetivo y breve en la redacción.\nNo inventes datos que no aparezcan en el CV.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        1840
+      ],
+      "id": "fa7f9068-007a-49f8-8f50-6c3aa1ef44c1",
+      "name": "compras"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sos un analista de recursos humanos especializado en selección de personal para el área de diseño, comunicación y marketing.\nTu tarea es evaluar el perfil de un candidato a partir del texto de su currículum (CV) y asignarle una puntuación del 1 al 10 según su grado de ajuste al siguiente perfil de puesto:\n\nCV del candidato: {{ $('extraer de pdf scaneado').item.json.pages[0].markdown }} o de {{ $json.text }}\n\n---\n\n**PUESTO:** AUXILIAR DE DISEÑO Y COMUNICACIÓN – CALZA LINDO\n\n**Misión:**\nBrindar soporte creativo y operativo al área de Diseño y Comunicación, asegurando una imagen coherente, actualizada y atractiva de la empresa en los distintos canales de comunicación.\n\n**Objetivos:**\nColaborar en la ejecución de las estrategias de comunicación visual, mantener actualizadas las redes sociales, diseñar materiales gráficos y participar activamente en campañas promocionales.\n\n**Responsabilidades principales:**\n\n* Crear historias y contenido semanal para redes sociales.\n* Diseñar y editar fotos, cartelería, vinilos y placas digitales.\n* Mantener actualizadas las redes sociales de la empresa.\n* Realizar sesiones fotográficas y de video.\n* Organizar sorteos en Facebook e Instagram.\n* Asegurar coherencia estética y de marca en todas las piezas gráficas.\n* Colaborar con el equipo en campañas y lanzamientos de temporada.\n\n**Indicadores de desempeño:**\nActualización de redes, cantidad/calidad de contenidos producidos, creatividad, cumplimiento de plazos, participación en campañas.\n\n**Requisitos:**\n\n* Educación: Secundario completo.\n* Se valorarán cursos o formación en diseño gráfico, comunicación visual o marketing digital.\n* Experiencia: manejo de redes sociales, diseño gráfico, comunicación virtual.\n* Lugar: Venado Tuerto (Santa Fe).\n* Disponibilidad full time, incluyendo sábados.\n* Manejo de herramientas tecnológicas.\n\n**Competencias requeridas:**\n\n* Proactividad (nivel 5)\n* Trabajo en equipo (nivel 4)\n* Organización y planificación (nivel 5)\n* Comunicación efectiva (nivel 5)\n* Responsabilidad y compromiso (nivel 4)\n* Orientación al cliente (nivel 5)\n* Innovación (nivel 4)\n* Adaptabilidad y flexibilidad (nivel 3)\n* Herramientas de diseño gráfico (nivel 5)\n* Conocimiento de estrategia de marketing (nivel 4)\n\n---\n\nUsá esta información para evaluar al candidato. El texto del CV será proporcionado a continuación.\n\nAdemás, si el CV contiene fechas de inicio y fin de empleos anteriores, calculá:\n- La duración de cada empleo (en meses).\n- El promedio total de permanencia laboral del candidato.\nIncluí ese valor en el JSON final.\n\nExtraé también el número de DNI si aparece en el CV.\n\nTu salida debe tener este formato JSON (no agregues texto fuera del JSON):\n\n{\n  \"nombre\": \"nombre del candidato\",\n  \"puesto\": \"depósito\",\n  \"puntaje\": 0,\n  \"cv_texto\": \"{{ $json.text }}\",\n  \"promedio_meses_empleos\": \"numero o null\",\n  \"dni\": \"numero o null\",\n  \"recomendacion\": \"Contratar (si el puntaje >=7) / Considerar (puntaje >5) / No recomendable (puntaje <=5)\"\n}\n\n\n**Ponderá los siguientes factores:**\n\n* Experiencia en diseño, comunicación o marketing digital (40%)\n* Competencias técnicas y blandas alineadas (30%)\n* Conocimientos y herramientas de diseño (15%)\n* Disponibilidad, residencia y adecuación al puesto (15%)\n\nSé objetivo y breve en la redacción.\nNo inventes datos que no aparezcan en el CV.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        1440
+      ],
+      "id": "af6d559e-1cbb-4027-9afd-1aa64b94146f",
+      "name": "redes, diseño"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sos un analista de recursos humanos especializado en selección de personal para el área administrativa y financiera.\n\nTu tarea es evaluar el perfil de un candidato a partir del texto de su currículum (CV) y asignarle una puntuación del 1 al 10 según su grado de ajuste al siguiente perfil de puesto:\n\nCV del candidato: {{ $('extraer de pdf scaneado').item.json.pages[0].markdown }} o de {{ $json.text }}\n\n\n\nPUESTO: ADMINISTRATIVO DE FINANZAS JUNIOR – CALZA LINDO\n\nMisión:\nBrindar soporte operativo y administrativo al área de finanzas, realizando gestiones bancarias y administrativas que garanticen el cumplimiento de las obligaciones financieras de la empresa, con responsabilidad, prolijidad y confidencialidad.\n\nObjetivos:\n\nEjecutar trámites bancarios de forma eficiente y segura.\n\nColaborar con la registración de movimientos financieros.\n\nApoyar al encargado del área en tareas administrativas diarias.\n\nMantener ordenada y actualizada la documentación contable y financiera.\n\nCumplir con los procedimientos internos establecidos.\n\nResponsabilidades principales:\n\nRealizar depósitos, pagos y cobros en entidades bancarias.\n\nCargar operaciones bancarias y movimientos de fondos en el sistema.\n\nOrganizar archivos y documentación contable.\n\nElaborar reportes simples.\n\nCoordinar tareas y reportar avances al encargado del área.\n\nIndicadores de desempeño:\nCumplimiento de trámites en tiempo y forma, precisión en el registro de datos, organización documental, puntualidad y asistencia.\n\nRequisitos:\n\nEducación: Secundario completo (valorado formación en administración, contabilidad o afines).\n\nExperiencia: Deseable experiencia previa en tareas administrativas o financieras.\n\nConocimientos: Básicos de gestiones bancarias y herramientas informáticas (Excel, correo).\n\nLugar: Venado Tuerto (Santa Fe).\n\nDisponibilidad: Part time, incluyendo sábados.\n\nMovilidad: Para realizar gestiones externas.\n\nCompetencias requeridas:\n\nResponsabilidad (nivel 5)\n\nConfidencialidad (nivel 5)\n\nOrganización (nivel 4)\n\nAutonomía operativa (nivel 4)\n\nTrabajo en equipo (nivel 2)\n\nConocimientos de trámites bancarios (nivel 5)\n\nManejo de herramientas informáticas (nivel 4)\n\nRegistro de operaciones en sistema (nivel 4)\n\nUsá esta información para evaluar al candidato.\nEl texto del CV será proporcionado a continuación.\n\nTu salida debe tener este formato JSON:\n\n{\n  \"nombre\": \"nombre del candidato\",\n  \"puesto\": \"administrativo de finanzas junior\",\n  \"puntaje\": 0-10,\n  \"cv_texto\": \"{{ $json.text }}\",\n  \"recomendacion\": \"Contratar (si el puntaje >=7) / Considerar (puntaje >5) / No recomendable (puntaje <=5)\"\n}\n\nPonderá los siguientes factores:\n\nExperiencia en tareas administrativas o financieras (40%)\n\nCompetencias blandas alineadas (responsabilidad, organización, confidencialidad, autonomía) (30%)\n\nConocimientos técnicos (bancarios, registros, herramientas informáticas) (15%)\n\nDisponibilidad, movilidad y ubicación (15%)\n\nSé objetivo y breve en la redacción.\nNo inventes datos que no aparezcan en el CV.\nRecupera el numero de DNI del cv en el pdf y envialo al siguiente nodo.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        1040
+      ],
+      "id": "11606698-8f42-4817-92b3-595a4f2a973b",
+      "name": "administracion"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sos un analista de recursos humanos especializado en selección de personal para el área de logística, stock y depósito.\n\nTu tarea es evaluar el perfil de un candidato a partir del texto de su currículum (CV) y asignarle una puntuación del 1 al 10 según su grado de ajuste al siguiente perfil de puesto:\n\nCV del candidato: {{ $('extraer de pdf scaneado').item.json.pages[0].markdown }} o de {{ $json.text }}\n\nPUESTO: DEPÓSITO – CALZA LINDO\n\nMisión:\nGarantizar el flujo eficiente y ordenado de la mercadería entre los depósitos y los puntos de venta, asegurando la disponibilidad, el correcto control de stock y el orden de los productos.\n\nObjetivos:\n\nAsegurar la reposición oportuna de productos en depósitos y casa central.\n\nControlar y garantizar el correcto almacenaje y exhibición de la mercadería.\n\nOptimizar la atención de comandas en tiempo y forma.\n\nMantener el orden, la limpieza y la seguridad del depósito.\n\nColaborar activamente con el equipo de ventas y logística interna.\n\nResponsabilidades principales:\n\nRealizar y controlar transferencias entre depósitos sin demoras.\n\nAtender comandas en tiempo y forma.\n\nReponer mercadería en depósitos y central según cronograma (lunes, miércoles y viernes).\n\nRecepcionar mercadería y almacenarla correctamente el mismo día.\n\nRevisar pares y gestionar los pares sueltos.\n\nIdentificar faltantes o productos en mal estado y registrarlos en sistema.\n\nMantener el depósito limpio, ordenado y cerrado correctamente al finalizar la jornada.\n\nIndicadores de desempeño:\nEficiencia en la gestión de inventario, cumplimiento de tiempos de entrega, control de calidad, orden y limpieza del depósito, y ausencia de errores de stock.\n\nRequisitos:\n\nEducación: Secundario completo.\n\nExperiencia: Experiencia en reposición, control o manejo de mercadería.\n\nLugar: Venado Tuerto (Santa Fe).\n\nDisponibilidad: Full time, incluyendo sábados.\n\nCondiciones: Manejo de productos de peso medio.\n\nCompetencias requeridas:\n\nProactividad (nivel 5)\n\nOrganización y planificación (nivel 5)\n\nComunicación efectiva (nivel 5)\n\nTrabajo en equipo (nivel 4)\n\nResponsabilidad y compromiso (nivel 4)\n\nResolución rápida de problemas (nivel 3)\n\nGestión de inventario (nivel 4)\n\nControl de calidad (nivel 5)\n\nLogística (nivel 4)\n\nMantenimiento del equipo (nivel 5)\n\nPreparación de pedidos (nivel 4)\n\nUsá esta información para evaluar al candidato.\n\nAdemás, si el CV contiene fechas de inicio y fin de empleos anteriores, calculá:\n- La duración de cada empleo (en meses).\n- El promedio total de permanencia laboral del candidato.\nIncluí ese valor en el JSON final.\n\nExtraé también el número de DNI si aparece en el CV.\n\nTu salida debe tener este formato JSON (no agregues texto fuera del JSON):\n\n{\n  \"nombre\": \"nombre del candidato\",\n  \"puesto\": \"depósito\",\n  \"puntaje\": 0,\n  \"cv_texto\": \"{{ $json.text }}\",\n  \"promedio_meses_empleos\": \"numero o null\",\n  \"dni\": \"numero o null\",\n  \"recomendacion\": \"Contratar (si el puntaje >=7) / Considerar (puntaje >5) / No recomendable (puntaje <=5)\"\n}\nPonderá los siguientes factores:\n\nExperiencia en depósito, logística o manejo de mercadería (40%)\n\nCompetencias blandas (proactividad, organización, trabajo en equipo, responsabilidad) (30%)\n\nConocimientos técnicos (gestión de inventario, control de calidad, preparación de pedidos) (15%)\n\nDisponibilidad, ubicación y condiciones físicas requeridas (15%)\n\nSé objetivo y breve en la redacción.\nNo inventes datos que no aparezcan en el CV.\nRecupera el numero de DNI del cv en el pdf y envialo al siguiente nodo.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        640
+      ],
+      "id": "7f3f2ba2-a827-49df-8cd3-e50f93f13c2a",
+      "name": "deposito"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sos un analista de recursos humanos especializado en selección de personal para el área comercial.\n\nTu tarea es evaluar el perfil de un candidato a partir del texto de su currículum (CV) y asignarle una puntuación del 1 al 10 según su grado de ajuste al siguiente perfil de puesto:\n\nCV del candidato: {{ $('extraer de pdf scaneado').item.json.pages[0].markdown }} o {{ $json.text }}\n\nPUESTO: VENDEDOR DE CASA CENTRAL – CALZA LINDO\nMisión: Brindar atención personalizada, eficiente y cordial al cliente, asesorándolo en la elección de calzado y colaborando con el equipo para cumplir los objetivos comerciales.\n\nObjetivos: Excelente atención, impulso de ventas, orden del local, y cumplimiento de los estándares de presentación.\n\nResponsabilidades principales:\n\nPuntualidad y cumplimiento de horarios.\n\nOrden, limpieza y buena presencia en el local.\n\nAtención al cliente con orientación a la venta.\n\nComunicación efectiva con el encargado y el equipo.\n\nColaboración con otras áreas (depósito, redes sociales).\n\nProactividad para resolver problemas o anticiparse a ellos.\n\nIndicadores de desempeño:\nVentas individuales, atención al cliente, presentación del local, colaboración, puntualidad, procesos administrativos.\n\nRequisitos:\n\nSecundario completo.\n\nExperiencia en atención al cliente o ventas.\n\nResidencia en Venado Tuerto.\n\nDisponibilidad full time, incluidos sábados.\n\nManejo de productos de peso medio.\n\nCompetencias requeridas:\n\nProactividad (5)\n\nTrabajo en equipo (4)\n\nTolerancia a la presión (2)\n\nResolución de problemas (5)\n\nOrientación al cliente (4)\n\nConocimientos en cobros/medios de pago (4)\n\nSeguimiento de stock (2)\n\nGestión de consultas y ventas (4)\n\nUsá esta información para evaluar al candidato. El texto del CV será proporcionado a continuación.\n\nAdemás, si el CV contiene fechas de inicio y fin de empleos anteriores, calculá:\n\nLa duración de cada empleo (en meses).\n\nEl promedio total de permanencia laboral del candidato.\n\nIncluí ese valor en el JSON final.\n\nExtraé también el número de DNI si aparece en el CV.\n\nTu salida debe tener este formato JSON (no agregues texto fuera del JSON):\n\n{\n  \"nombre\": \"nombre del candidato\",\n  \"puesto\": \"vendedor\",\n  \"puntaje\": 0,\n  \"cv_texto\": \"{{ $json.text }}\",\n  \"promedio_meses_empleos\": \"numero o null\",\n  \"dni\": \"numero o null\",\n  \"recomendacion\": \"Contratar / Considerar / No recomendable\"\n}\n\n\nPonderá los siguientes factores:\n\nExperiencia en ventas o atención al cliente (40%)\n\nActitud y competencias blandas alineadas (30%)\n\nDisponibilidad y lugar de residencia (15%)\n\nRequisitos técnicos o administrativos (15%)\n\nSé objetivo y breve. No inventes datos que no estén en el CV.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        240
+      ],
+      "id": "279dedf0-2542-4cd1-97fe-04c7181573b8",
+      "name": "vendedor"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.all().map(item => item.json);\n// Ordenar por fecha de forma descendente (más reciente primero) por defecto\ndata.sort((a, b) => new Date(b.fecha_evaluacion) - new Date(a.fecha_evaluacion));\n\nconst stats = {\n  total: data.length,\n  contratar: data.filter(d => d.puntaje >= 7).length,\n  considerar: data.filter(d => d.puntaje > 5 && d.puntaje < 7).length,\n  noRecomendable: data.filter(d => d.puntaje <= 5).length,\n  promedioGeneral: data.length > 0 ? (data.reduce((sum, d) => sum + (Number(d.puntaje) || 0), 0) / data.length).toFixed(1) : '0.0'\n};\n\nfunction getRecomendacionClass(puntaje) {\n  if (puntaje >= 7) return 'contratar';\n  if (puntaje > 5) return 'considerar';\n  return 'no-recomendable';\n}\n\nfunction getRecomendacionText(puntaje) {\n  if (puntaje >= 7) return 'Contratar';\n  if (puntaje > 5) return 'Considerar';\n  return 'No Recomendable';\n}\n\nfunction getBadgeColor(puntaje) {\n  if (puntaje >= 7) return '#10b981';\n  if (puntaje > 5) return '#f59e0b';\n  return '#ef4444';\n}\n\nfunction generarLinkSupabase(nombre, telefono) {\n  if (!telefono || !nombre) return null;\n  const nombreLimpio = nombre.trim();\n  const telefonoLimpio = telefono.trim();\n  const nombreArchivo = `${nombreLimpio}${telefonoLimpio}.pdf`;\n  const nombreDescarga = encodeURIComponent(nombreArchivo);\n  return `${SUPABASE_URL}/storage/v1/object/public/cvs/${nombreDescarga}?download=${nombreArchivo}`;\n}\n\nfunction escapeHtml(text) {\n  if (!text) return '';\n  return text\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#039;')\n    .replace(/\\n/g, ' ')\n    .replace(/\\r/g, '');\n}\n\nconst SUPABASE_URL = 'https://qzbrmwajddjdqffghwrw.supabase.co';\nconst SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6YnJtd2FqZGRqZHFmZmdod3J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxMzc0ODIsImV4cCI6MjA3NTcxMzQ4Mn0.4XYD2KPllYfCCfq5NOgOvLuCM-LKGADYCgVLZtxk9VU';\nconst TABLA_POSTULANTES = 'postulantes_evaluaciones';\nconst WEBHOOK_RECHAZO_URL = 'https://n8n.calzalindo.com.ar/webhook/rechazo_cliente';\n\nvar html = `\n<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>👥 Dashboard de Recursos Humanos</title>\n  <style>\n    * { margin: 0; padding: 0; box-sizing: border-box; }\n    body {\n      font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\n      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n      padding: 10px;\n      min-height: 100vh;\n    }\n    .container {\n      max-width: 100%;\n      margin: 0 auto;\n      background: white;\n      border-radius: 12px;\n      box-shadow: 0 10px 30px rgba(0,0,0,0.2);\n      overflow: hidden;\n    }\n    .header {\n      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n      color: white;\n      padding: 20px;\n      text-align: center;\n    }\n    .header h1 { font-size: 1.8em; margin-bottom: 5px; }\n    .header p { font-size: 1em; opacity: 0.9; }\n    .stats-grid {\n      display: grid;\n      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));\n      gap: 12px;\n      padding: 15px;\n      background: #f8fafc;\n    }\n    .stat-card {\n      background: white;\n      padding: 15px;\n      border-radius: 10px;\n      box-shadow: 0 2px 4px rgba(0,0,0,0.08);\n      text-align: center;\n      transition: transform 0.3s;\n    }\n    .stat-card:hover { transform: translateY(-3px); }\n    .stat-card .label {\n      font-size: 0.8em;\n      color: #64748b;\n      margin-bottom: 8px;\n      font-weight: 600;\n    }\n    .stat-card .value {\n      font-size: 2em;\n      font-weight: bold;\n      color: #1e293b;\n    }\n    .content {\n      padding: 15px;\n    }\n    .filters {\n      display: flex;\n      gap: 10px;\n      margin-bottom: 15px;\n      flex-wrap: wrap;\n      align-items: center;\n    }\n    .filter-group {\n      display: flex;\n      align-items: center;\n      gap: 6px;\n    }\n    .search-input {\n      padding: 8px 12px;\n      border: 2px solid #e2e8f0;\n      border-radius: 6px;\n      font-size: 0.9em;\n      width: 250px;\n      transition: border-color 0.3s;\n    }\n    .search-input:focus {\n      outline: none;\n      border-color: #667eea;\n    }\n    select {\n      padding: 8px 12px;\n      border: 2px solid #e2e8f0;\n      border-radius: 6px;\n      font-size: 0.9em;\n      background: white;\n      cursor: pointer;\n      transition: border-color 0.3s;\n    }\n    select:focus {\n      outline: none;\n      border-color: #667eea;\n    }\n    .btn-filter {\n      padding: 8px 16px;\n      border: 2px solid #e2e8f0;\n      border-radius: 6px;\n      font-size: 0.9em;\n      background: white;\n      cursor: pointer;\n      transition: all 0.3s;\n      font-weight: 600;\n    }\n    .btn-filter.active {\n      border-color: #667eea;\n      background: #667eea;\n      color: white;\n    }\n    .btn-filter:hover {\n      border-color: #667eea;\n    }\n    .table-container {\n      overflow-x: auto;\n      border-radius: 8px;\n      box-shadow: 0 2px 4px rgba(0,0,0,0.08);\n    }\n    table {\n      width: 100%;\n      border-collapse: collapse;\n      background: white;\n      font-size: 0.9em;\n    }\n    thead {\n      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n      color: white;\n    }\n    th {\n      padding: 10px 8px;\n      text-align: center;\n      font-weight: 600;\n      font-size: 0.85em;\n      white-space: nowrap;\n    }\n    td {\n      padding: 10px 8px;\n      border-bottom: 1px solid #e2e8f0;\n      text-align: center;\n      vertical-align: middle;\n    }\n    tbody tr {\n      transition: background-color 0.2s;\n    }\n    tbody tr:hover {\n      background-color: #f8fafc;\n    }\n    .badge {\n      display: inline-block;\n      padding: 5px 10px;\n      border-radius: 15px;\n      font-size: 0.8em;\n      font-weight: 600;\n      color: white;\n      white-space: nowrap;\n    }\n    .contratar { background-color: #10b981; }\n    .considerar { background-color: #f59e0b; }\n    .no-recomendable { background-color: #ef4444; }\n    .puntaje-box {\n      display: inline-flex;\n      width: 45px;\n      height: 45px;\n      border-radius: 8px;\n      align-items: center;\n      justify-content: center;\n      font-weight: bold;\n      font-size: 1.2em;\n      color: white;\n      margin: 0 auto;\n    }\n    .puntaje-evaluacion {\n      display: inline-block;\n      padding: 3px 8px;\n      border-radius: 10px;\n      font-size: 0.8em;\n      font-weight: 600;\n      color: white;\n      background-color: #3b82f6;\n      margin-left: 5px;\n    }\n    .btn {\n      padding: 6px 12px;\n      border: none;\n      border-radius: 5px;\n      cursor: pointer;\n      font-size: 0.85em;\n      transition: all 0.3s;\n      text-decoration: none;\n      display: inline-block;\n      white-space: nowrap;\n    }\n    .btn-primary {\n      background: #667eea;\n      color: white;\n    }\n    .btn-primary:hover {\n      background: #5568d3;\n    }\n    .btn-secondary {\n      background: #64748b;\n      color: white;\n    }\n    .btn-secondary:hover {\n      background: #475569;\n    }\n    .modal {\n      display: none;\n      position: fixed;\n      top: 0;\n      left: 0;\n      width: 100%;\n      height: 100%;\n      background: rgba(0,0,0,0.7);\n      z-index: 1000;\n      justify-content: center;\n      align-items: center;\n    }\n    .modal-content {\n      background: white;\n      padding: 20px;\n      border-radius: 12px;\n      max-width: 800px;\n      max-height: 80vh;\n      overflow-y: auto;\n      width: 90%;\n    }\n    .modal-header {\n      display: flex;\n      justify-content: space-between;\n      align-items: center;\n      margin-bottom: 15px;\n      padding-bottom: 12px;\n      border-bottom: 2px solid #e2e8f0;\n    }\n    .close-modal {\n      background: #ef4444;\n      color: white;\n      border: none;\n      width: 28px;\n      height: 28px;\n      border-radius: 50%;\n      cursor: pointer;\n      font-size: 1.1em;\n    }\n    .empty-state {\n      text-align: center;\n      padding: 40px 20px;\n      color: #64748b;\n    }\n    .empty-state-icon {\n      font-size: 3em;\n      margin-bottom: 15px;\n    }\n    select.estado-select {\n      padding: 6px 10px;\n      border: 2px solid #e2e8f0;\n      border-radius: 5px;\n      font-size: 0.85em;\n      cursor: pointer;\n      transition: border-color 0.3s;\n    }\n    select.estado-select:focus {\n      outline: none;\n      border-color: #667eea;\n    }\n    .save-section {\n      margin-top: 15px;\n      padding: 15px;\n      background: #f8fafc;\n      border-radius: 8px;\n      display: none;\n    }\n    .save-section.active {\n      display: block;\n    }\n    textarea {\n      width: 100%;\n      padding: 10px;\n      border: 2px solid #e2e8f0;\n      border-radius: 6px;\n      font-family: inherit;\n      font-size: 0.9em;\n      resize: vertical;\n      min-height: 80px;\n    }\n    textarea:focus {\n      outline: none;\n      border-color: #667eea;\n    }\n    .button-group {\n      display: flex;\n      gap: 8px;\n      margin-top: 12px;\n    }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>👥 Dashboard de Recursos Humanos</h1>\n      <p>Calza Lindo - Sistema de Evaluación de Postulantes</p>\n    </div>\n    \n    <div class=\"stats-grid\">\n      <div class=\"stat-card\">\n        <div class=\"label\">Total Evaluaciones</div>\n        <div class=\"value\">${stats.total}</div>\n      </div>\n      <div class=\"stat-card\">\n        <div class=\"label\">✅ Contratar (≥7)</div>\n        <div class=\"value\">${stats.contratar}</div>\n      </div>\n      <div class=\"stat-card\">\n        <div class=\"label\">⚠️ Considerar (5-7)</div>\n        <div class=\"value\">${stats.considerar}</div>\n      </div>\n      <div class=\"stat-card\">\n        <div class=\"label\">❌ No Recomendable (≤5)</div>\n        <div class=\"value\">${stats.noRecomendable}</div>\n      </div>\n      <div class=\"stat-card\">\n        <div class=\"label\">📊 Promedio General</div>\n        <div class=\"value\">${stats.promedioGeneral}</div>\n      </div>\n    </div>\n\n    <div class=\"content\">\n      <h2 style=\"margin-bottom: 15px; font-size: 1.3em;\">📋 Listado de Postulantes</h2>\n      \n      <div class=\"filters\">\n        <div class=\"filter-group\">\n          <label>🔍</label>\n          <input type=\"text\" id=\"busquedaNombre\" class=\"search-input\" placeholder=\"Buscar por nombre...\" oninput=\"filtrarTabla()\">\n        </div>\n        <div class=\"filter-group\">\n          <label>📊</label>\n          <select id=\"filtroEstado\" onchange=\"filtrarTabla()\">\n            <option value=\"\">Todos los estados</option>\n            <option value=\"sin entrevistar\">Sin Entrevistar</option>\n            <option value=\"1era entrevista\">1era Entrevista</option>\n            <option value=\"2da entrevista\">2da Entrevista</option>\n            <option value=\"contratado\">Contratado</option>\n            <option value=\"rechazado\">Rechazado</option>\n          </select>\n        </div>\n        <div class=\"filter-group\">\n          <label>🔽</label>\n          <select id=\"filtroPuesto\" onchange=\"filtrarTabla()\">\n            <option value=\"\">Todos los puestos</option>\n          </select>\n        </div>\n        <div class=\"filter-group\">\n          <label>📍</label>\n          <select id=\"filtroLocalidad\" onchange=\"filtrarTabla()\">\n            <option value=\"\">Todas las localidades</option>\n          </select>\n        </div>\n        <div class=\"filter-group\" style=\"margin-left: 10px;\">\n          <button class=\"btn-filter active\" data-recomendacion=\"\" onclick=\"filtrarPorRecomendacion(this, '')\">Todos</button>\n          <button class=\"btn-filter\" data-recomendacion=\"contratar\" onclick=\"filtrarPorRecomendacion(this, 'contratar')\">✅ Contratar</button>\n          <button class=\"btn-filter\" data-recomendacion=\"considerar\" onclick=\"filtrarPorRecomendacion(this, 'considerar')\">⚠️ Considerar</button>\n          <button class=\"btn-filter\" data-recomendacion=\"no-recomendable\" onclick=\"filtrarPorRecomendacion(this, 'no-recomendable')\">❌ No Recomendable</button>\n        </div>\n      </div>\n\n      <div class=\"table-container\">\n        <table id=\"tablaPostulantes\">\n          <thead>\n            <tr>\n              <th style=\"padding:6px 4px; width:140px;\">Nombre</th>\n<th style=\"padding:6px 4px; width:110px;\">Teléfono</th>\n              <th>Localidad</th>\n              <th>Puesto</th>\n              <th>Puntaje</th>\n              <th>Puntaje Respuestas</th>\n              <th>Prom. Meses Empleos</th>\n              <th>Recomendación</th>\n              <th>Estado</th>\n              <th>Fecha Evaluación</th>\n              <th>Ver CV</th>\n              <th>Observaciones</th>\n              <th>Descargar</th>\n            </tr>\n          </thead>\n          <tbody>\n`;\n\nif (data.length > 0) {\n  for (let i = 0; i < data.length; i++) {\n    const r = data[i];\n    const clase = getRecomendacionClass(r.puntaje || 0);\n    const recomText = getRecomendacionText(r.puntaje || 0);\n    const badgeColor = getBadgeColor(r.puntaje || 0);\n    const fecha = new Date(r.fecha_evaluacion).toLocaleString('es-AR');\n    const linkCV = generarLinkSupabase(r.nombre, r.telefono);\n    const estadoActual = r.estado || 'sin entrevistar';\n    const recordId = r.id || '';\n    const nombreEscapado = escapeHtml(r.nombre || 'Desconocido');\n    const textoEscapado = escapeHtml(r.cv_texto || 'Sin texto disponible');\n    const observacionesEscapadas = escapeHtml(r.observaciones || '');\n\n    html += `\n            <tr data-estado=\"${estadoActual}\" data-puesto=\"${r.puesto || ''}\" data-localidad=\"${r.localidad || ''}\" data-recomendacion=\"${clase}\" data-nombre=\"${r.nombre ? r.nombre.toLowerCase() : ''}\">\n<td style=\"text-align:left; padding:6px 4px;\"><strong>${r.nombre || 'Desconocido'}</strong></td>\n<td style=\"padding:6px 4px;\">${r.telefono || 'N/A'}</td>\n              <td>${r.localidad || 'N/A'}</td>\n              <td>${r.puesto || 'N/A'}</td>\n              <td>\n                <div class=\"puntaje-box\" style=\"background-color: ${badgeColor};\">\n                  ${r.puntaje || 0}\n                </div>\n              </td>\n             <td>\n  ${r.puntaje_evaluacion !== undefined && r.puntaje_evaluacion !== null ? \n    '<div class=\"puntaje-evaluacion\">' + r.puntaje_evaluacion + '</div>' : \n    '—'}\n</td>\n\n<td>\n  ${r.promedio_meses_empleos !== undefined && r.promedio_meses_empleos !== null\n    ? r.promedio_meses_empleos\n    : '—'}\n</td>\n\n<td><span class=\"badge ${clase}\">${recomText}</span></td>\n\n              <td>\n                <select class=\"estado-select\" data-record-id=\"${recordId}\" data-nombre=\"${nombreEscapado}\" data-telefono=\"${r.telefono || ''}\" data-estado-original=\"${estadoActual}\" onchange=\"cambiarEstado(this)\">\n                  <option value=\"sin entrevistar\" ${estadoActual === 'sin entrevistar' ? 'selected' : ''}>Sin Entrevistar</option>\n                  <option value=\"1era entrevista\" ${estadoActual === '1era entrevista' ? 'selected' : ''}>1era Entrevista</option>\n                  <option value=\"2da entrevista\" ${estadoActual === '2da entrevista' ? 'selected' : ''}>2da Entrevista</option>\n                  <option value=\"contratado\" ${estadoActual === 'contratado' ? 'selected' : ''}>Contratado</option>\n                  <option value=\"rechazado\" ${estadoActual === 'rechazado' ? 'selected' : ''}>Rechazado</option>\n                </select>\n              </td>\n              <td style=\"font-size: 0.85em;\">${fecha}</td>\n              <td>\n                <button class=\"btn btn-primary\" onclick='verCV(\\`${textoEscapado}\\`, \"${nombreEscapado}\")'>👁️</button>\n              </td>\n              <td>\n                <button class=\"btn btn-primary\" onclick='editarObservaciones(\"${recordId}\", \\`${observacionesEscapadas}\\`, \"${nombreEscapado}\")'>📝</button>\n              </td>\n              <td>\n                ${linkCV ? `<a href=\"${linkCV}\" class=\"btn btn-secondary\" target=\"_blank\">📄</a>` : '—'}\n              </td>\n            </tr>\n    `;\n  }\n} else {\n  html += `\n            <tr>\n              <td colspan=\"12\">\n                <div class=\"empty-state\">\n                  <div class=\"empty-state-icon\">📭</div>\n                  <h3>No hay evaluaciones aún</h3>\n                </div>\n              </td>\n            </tr>\n  `;\n}\n\nhtml += `\n          </tbody>\n        </table>\n      </div>\n    </div>\n  </div>\n\n  <div id=\"modalCV\" class=\"modal\" onclick=\"cerrarModal(event)\">\n    <div class=\"modal-content\" onclick=\"event.stopPropagation()\">\n      <div class=\"modal-header\">\n        <h2 id=\"modalTitulo\">CV</h2>\n        <button class=\"close-modal\" onclick=\"cerrarModalCV()\">×</button>\n      </div>\n      <div id=\"modalCuerpo\" style=\"white-space: pre-wrap; line-height: 1.6;\"></div>\n    </div>\n  </div>\n\n  <div id=\"modalObservaciones\" class=\"modal\" onclick=\"cerrarModal(event)\">\n    <div class=\"modal-content\" onclick=\"event.stopPropagation()\">\n      <div class=\"modal-header\">\n        <h2 id=\"modalObservacionesTitulo\">Observaciones</h2>\n        <button class=\"close-modal\" onclick=\"cerrarModalObservaciones()\">×</button>\n      </div>\n      <div id=\"modalObservacionesCuerpo\">\n        <textarea id=\"observacionesTextarea\" placeholder=\"Escribe tus observaciones aquí...\"></textarea>\n        <div class=\"button-group\">\n          <button class=\"btn btn-primary\" onclick=\"guardarObservaciones()\">💾 Guardar</button>\n          <button class=\"btn btn-secondary\" onclick=\"cerrarModalObservaciones()\">❌ Cancelar</button>\n        </div>\n      </div>\n    </div>\n  </div>\n\n  <script>\n    const SUPABASE_URL = '${SUPABASE_URL}';\n    const SUPABASE_ANON_KEY = '${SUPABASE_ANON_KEY}';\n    const TABLA = '${TABLA_POSTULANTES}';\n    const WEBHOOK_RECHAZO = '${WEBHOOK_RECHAZO_URL}';\n    let recordIdActual = '';\n    let estadoCambios = {};\n    let filtroRecomendacionActual = '';\n\n    // Llenar filtros de puesto y localidad\n    window.addEventListener('DOMContentLoaded', () => {\n      const puestos = new Set();\n      const localidades = new Set();\n      \n      document.querySelectorAll('#tablaPostulantes tbody tr').forEach(tr => {\n        const puesto = tr.dataset.puesto;\n        const localidad = tr.dataset.localidad;\n        if (puesto) puestos.add(puesto);\n        if (localidad) localidades.add(localidad);\n      });\n\n      const filtroPuesto = document.getElementById('filtroPuesto');\n      const filtroLocalidad = document.getElementById('filtroLocalidad');\n\n      [...puestos].sort().forEach(p => {\n        const opt = document.createElement('option');\n        opt.value = p;\n        opt.textContent = p;\n        filtroPuesto.appendChild(opt);\n      });\n\n      [...localidades].sort().forEach(l => {\n        const opt = document.createElement('option');\n        opt.value = l;\n        opt.textContent = l;\n        filtroLocalidad.appendChild(opt);\n      });\n    });\n\n    function filtrarPorRecomendacion(button, recomendacion) {\n      // Actualizar botones activos\n      document.querySelectorAll('.btn-filter').forEach(btn => {\n        btn.classList.remove('active');\n      });\n      button.classList.add('active');\n      \n      filtroRecomendacionActual = recomendacion;\n      filtrarTabla();\n    }\n\n    function filtrarTabla() {\n      const estadoSeleccionado = document.getElementById('filtroEstado').value.toLowerCase();\n      const puestoSeleccionado = document.getElementById('filtroPuesto').value;\n      const localidadSeleccionada = document.getElementById('filtroLocalidad').value;\n      const busquedaNombre = document.getElementById('busquedaNombre').value.toLowerCase().trim();\n\n      document.querySelectorAll('#tablaPostulantes tbody tr').forEach(tr => {\n        const estadoFila = tr.dataset.estado?.toLowerCase() || '';\n        const puestoFila = tr.dataset.puesto || '';\n        const localidadFila = tr.dataset.localidad || '';\n        const recomendacionFila = tr.dataset.recomendacion || '';\n        const nombreFila = tr.dataset.nombre || '';\n\n        const coincideEstado = !estadoSeleccionado || estadoFila === estadoSeleccionado;\n        const coincidePuesto = !puestoSeleccionado || puestoFila === puestoSeleccionado;\n        const coincideLocalidad = !localidadSeleccionada || localidadFila === localidadSeleccionada;\n        const coincideRecomendacion = !filtroRecomendacionActual || recomendacionFila === filtroRecomendacionActual;\n        const coincideNombre = !busquedaNombre || nombreFila.includes(busquedaNombre);\n\n        if (coincideEstado && coincidePuesto && coincideLocalidad && coincideRecomendacion && coincideNombre) {\n          tr.style.display = '';\n        } else {\n          tr.style.display = 'none';\n        }\n      });\n    }\n\n    function verCV(texto, nombre) {\n      document.getElementById('modalTitulo').textContent = 'CV de ' + nombre;\n      document.getElementById('modalCuerpo').textContent = texto;\n      document.getElementById('modalCV').style.display = 'flex';\n    }\n\n    function cerrarModalCV() {\n      document.getElementById('modalCV').style.display = 'none';\n    }\n\n    function editarObservaciones(recordId, observaciones, nombre) {\n      recordIdActual = recordId;\n      document.getElementById('modalObservacionesTitulo').textContent = 'Observaciones - ' + nombre;\n      document.getElementById('observacionesTextarea').value = observaciones;\n      document.getElementById('modalObservaciones').style.display = 'flex';\n    }\n\n    function cerrarModalObservaciones() {\n      document.getElementById('modalObservaciones').style.display = 'none';\n      recordIdActual = '';\n    }\n\n    function cerrarModal(event) {\n      if (event.target.classList.contains('modal')) {\n        event.target.style.display = 'none';\n      }\n    }\n\n    async function guardarObservaciones() {\n      const observaciones = document.getElementById('observacionesTextarea').value;\n      \n      try {\n        const response = await fetch(\\`\\${SUPABASE_URL}/rest/v1/\\${TABLA}?id=eq.\\${recordIdActual}\\`, {\n          method: 'PATCH',\n          headers: {\n            'Content-Type': 'application/json',\n            'apikey': SUPABASE_ANON_KEY,\n            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,\n            'Prefer': 'return=minimal'\n          },\n          body: JSON.stringify({ observaciones })\n        });\n\n        if (response.ok) {\n          alert('✅ Observaciones guardadas exitosamente');\n          cerrarModalObservaciones();\n          location.reload();\n        } else {\n          throw new Error('Error al guardar');\n        }\n      } catch (error) {\n        console.error('Error:', error);\n        alert('❌ Error al guardar las observaciones');\n      }\n    }\n\n    async function cambiarEstado(selectElement) {\n      const recordId = selectElement.dataset.recordId;\n      const nuevoEstado = selectElement.value;\n      const estadoOriginal = selectElement.dataset.estadoOriginal;\n      const nombre = selectElement.dataset.nombre;\n      const telefono = selectElement.dataset.telefono;\n\n      // Si el nuevo estado es \"rechazado\", enviar notificación\n      if (nuevoEstado === 'rechazado') {\n        try {\n          // Enviar POST al webhook\n          await fetch(WEBHOOK_RECHAZO, {\n            method: 'POST',\n            headers: {\n              'Content-Type': 'application/json'\n            },\n            body: JSON.stringify({\n              nombre: nombre,\n              telefono: telefono\n            })\n          });\n          console.log('✅ Notificación de rechazo enviada');\n        } catch (error) {\n          console.error('❌ Error al enviar notificación de rechazo:', error);\n          // Continuar con el cambio de estado aunque falle la notificación\n        }\n      }\n\n      // Actualizar el estado en Supabase\n      try {\n        const response = await fetch(\\`\\${SUPABASE_URL}/rest/v1/\\${TABLA}?id=eq.\\${recordId}\\`, {\n          method: 'PATCH',\n          headers: {\n            'Content-Type': 'application/json',\n            'apikey': SUPABASE_ANON_KEY,\n            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,\n            'Prefer': 'return=minimal'\n          },\n          body: JSON.stringify({ estado: nuevoEstado })\n        });\n\n        if (response.ok) {\n          // Actualizar el atributo data-estado-original\n          selectElement.dataset.estadoOriginal = nuevoEstado;\n          // Actualizar el atributo data-estado del tr\n          selectElement.closest('tr').dataset.estado = nuevoEstado;\n          alert('✅ Estado actualizado exitosamente' + (nuevoEstado === 'rechazado' ? ' y notificación enviada' : ''));\n        } else {\n          throw new Error('Error al actualizar estado');\n        }\n      } catch (error) {\n        console.error('Error:', error);\n        alert('❌ Error al actualizar el estado');\n        // Revertir el select al valor original\n        selectElement.value = estadoOriginal;\n      }\n    }\n  </script>\n</body>\n</html>\n`;\n\nreturn [{ json: { html } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        1984
+      ],
+      "id": "8348957a-f7a0-4758-af58-a406e738e2b0",
+      "name": "Generar HTML Dashboard3"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1664,
+        3264
+      ],
+      "id": "63c33eeb-fa88-4538-bf7b-030330da5927",
+      "name": "OpenAI Chat Model8",
+      "credentials": {
+        "openAiApi": {
+          "id": "y24XiTpiUvoN6ssC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener el texto de salida del nodo anterior\nlet raw = $json.output || \"\";\n\n// 1️⃣ Eliminar los backticks, \"json\\n\", etc.\nraw = raw\n  .replace(/```json/gi, '')\n  .replace(/```/g, '')\n  .trim();\n\n// 2️⃣ Buscar un objeto JSON válido dentro del texto\nlet jsonTextMatch = raw.match(/\\{[\\s\\S]*\\}/);\nif (!jsonTextMatch) {\n  throw new Error(\"No se encontró un objeto JSON válido en la salida del modelo.\");\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(jsonTextMatch[0]);\n} catch (error) {\n  throw new Error(\"Error al parsear el JSON de la IA: \" + error.message);\n}\n\n// 3️⃣ Crear estructura limpia para base de datos\nconst resultado = {\n  nombre: parsed.nombre || \"Desconocido\",\n  puesto: parsed.puesto || \"Vendedor\",\n  puntaje: Number(parsed.puntaje) || 0,\n  recomendacion: parsed.recomendacion || \"Sin definir\",\n  cv_texto: parsed.cv_texto || \"\",\n  promedio_meses_empleos: parsed.promedio_meses_empleos ?? null,\n  dni: parsed.dni ?? null,\n  fecha_evaluacion: new Date().toISOString(),\n};\n\n// 4️⃣ Retornar el resultado para usarlo en el nodo PostgreSQL (Insert)\nreturn [resultado];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        3040
+      ],
+      "id": "0c724417-9cac-4bec-9878-f1fa76205c40",
+      "name": "depurar output IA11"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "postulantes_evaluaciones",
+          "mode": "list",
+          "cachedResultName": "postulantes_evaluaciones"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $('RecibirInfoPrestashop').item.json.body.nombre }}",
+            "puesto": "={{ $('RecibirInfoPrestashop').item.json.body.puesto }}",
+            "puntaje": "={{ $json.puntaje }}",
+            "recomendacion": "={{ $json.recomendacion }}",
+            "cv_texto": "={{ $json.cv_texto }}",
+            "fecha_evaluacion": "={{ $json.fecha_evaluacion }}",
+            "cvs_links": "={{ $('HTTP Request').item.json.Key }}",
+            "telefono": "={{ $('RecibirInfoPrestashop').item.json.body.telefono }}",
+            "email": "={{ $('RecibirInfoPrestashop').item.json.body.email }}",
+            "localidad": "={{ $('RecibirInfoPrestashop').item.json.body.localidad }}",
+            "promedio_meses_empleos": "={{ $json.promedio_meses_empleos }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puesto",
+              "displayName": "puesto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "puntaje",
+              "displayName": "puntaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recomendacion",
+              "displayName": "recomendacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cv_texto",
+              "displayName": "cv_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_evaluacion",
+              "displayName": "fecha_evaluacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fuente",
+              "displayName": "fuente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cvs_links",
+              "displayName": "cvs_links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observaciones",
+              "displayName": "observaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "localidad",
+              "displayName": "localidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "promedio_meses_empleos",
+              "displayName": "promedio_meses_empleos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2176,
+        3040
+      ],
+      "id": "6dbdab95-9ffc-45f1-b375-17d9668d8995",
+      "name": "Insert rows in a table7",
+      "credentials": {
+        "postgres": {
+          "id": "nFqo90cHZ3ehf88W",
+          "name": "postgres supabase calzalindo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sos un analista de Recursos Humanos especializado en selección y evaluación de perfiles RRHH Junior, con foco operativo–analítico, procesos de selección y orden administrativo.\n\nTu tarea es evaluar el perfil de un candidato a partir del texto de su currículum (CV) y asignarle una puntuación del 1 al 10 según su grado de ajuste al siguiente perfil de puesto.\n\nCV del candidato:\n{{ $('extraer de pdf scaneado').item.json.pages[0].markdown }}\n\n\no\n\n{{ $json.text }}\n\nPUESTO: RRHH Junior\nMisión\n\nAcompañar al responsable del área de Recursos Humanos en la gestión operativa y analítica, con foco en procesos de selección, orden de procesos internos, documentación y reportes, contribuyendo a la mejora continua del área.\n\nObjetivos\n\nParticipar activamente en procesos de selección de personal.\n\nBrindar soporte operativo en la gestión diaria de RRHH.\n\nMantener actualizadas las descripciones de puestos.\n\nAsegurar el orden, control y seguimiento de procesos de RRHH.\n\nGestionar correctamente documentación y reportes del área.\n\nResponsabilidades principales\n\nParticipar en procesos de reclutamiento y selección (publicación, screening, coordinación).\n\nDar soporte operativo al responsable del área de RRHH.\n\nArmar y actualizar descripciones de puestos.\n\nControlar y dar seguimiento a procesos internos de RRHH.\n\nGestionar, ordenar y archivar documentación del área.\n\nElaborar y mantener reportes básicos de RRHH (Excel / Sheets).\n\nIndicadores de desempeño\n\nOrganización del área, cumplimiento de procesos, calidad de la información, prolijidad documental, capacidad de seguimiento, comunicación interna y soporte efectivo a selección.\n\nRequisitos\n\nExperiencia previa en Recursos Humanos.\n\nExperiencia en procesos de selección.\n\nManejo de Excel o Google Sheets.\n\nBuen nivel de organización y comunicación.\n\nCompetencias requeridas\n\nOrganización y planificación (5)\n\nComunicación efectiva (5)\n\nProactividad (4)\n\nCapacidad analítica (4)\n\nSeguimiento de procesos (5)\n\nOrden administrativo y documental (5)\n\nTrabajo en equipo (4)\n\nAtención al detalle (4)\n\nValoramos especialmente\n\nEstudios en Recursos Humanos o carreras afines.\n\nExperiencia en pymes.\n\nInterés en tecnología aplicada a RRHH.\n\nCálculos adicionales\n\nSi el CV contiene fechas de inicio y fin:\n\nCalcular duración de cada empleo en meses.\n\nCalcular promedio total de permanencia laboral.\n\nExtraer número de DNI si aparece.\n\nFORMATO DE SALIDA\n\nOBLIGATORIO – NO AGREGAR NADA FUERA DEL JSON\n\n{\n  \"nombre\": \"nombre del candidato\",\n  \"puesto\": \"rrhh junior\",\n  \"puntaje\": 0,\n  \"cv_texto\": \"{{ $json.text }}\",\n  \"promedio_meses_empleos\": \"numero o null\",\n  \"dni\": \"numero o null\",\n  \"recomendacion\": \"Contratar / Considerar / No recomendable\"\n}\n\nPonderación\n\nExperiencia en RRHH y selección (40%)\n\nOrganización, comunicación y competencias blandas (30%)\n\nConocimientos técnicos y administrativos (Excel / procesos) (20%)\n\nFormación, pymes e interés en tecnología RRHH (10%)\n\nSé objetivo, no inventes datos y basate únicamente en la información presente en el CV.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1600,
+        3040
+      ],
+      "id": "6a528199-f099-42ff-9dec-612d767749ec",
+      "name": "rrhh junior"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "RediccionarSolcitudPostulante",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RediccionarSolcitudPostulante": {
+      "main": [
+        [
+          {
+            "node": "vendedor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "deposito",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "administracion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "redes, diseño",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "compras",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "mantenimiento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "logistica",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "rrhh junior",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extraer texto del cv": {
+      "main": [
+        [
+          {
+            "node": "RediccionarSolcitudPostulante",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "vendedor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "depurar output IA": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Dashboard": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "deposito",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "administracion",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "redes, diseño",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "compras",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extraer de pdf scaneado": {
+      "main": [
+        [
+          {
+            "node": "extraer texto del cv",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RecibirInfoPrestashop": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "extraer de pdf scaneado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "mantenimiento",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "depurar output IA6": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table11",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Generar HTML Dashboard3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "depurar output IA5": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "depurar output IA7": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "depurar output IA8": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "depurar output IA9": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model7": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "logistica",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "depurar output IA10": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "logistica": {
+      "main": [
+        [
+          {
+            "node": "depurar output IA10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mantenimiento": {
+      "main": [
+        [
+          {
+            "node": "depurar output IA6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "compras": {
+      "main": [
+        [
+          {
+            "node": "depurar output IA9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "redes, diseño": {
+      "main": [
+        [
+          {
+            "node": "depurar output IA8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "administracion": {
+      "main": [
+        [
+          {
+            "node": "depurar output IA7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "deposito": {
+      "main": [
+        [
+          {
+            "node": "depurar output IA5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "vendedor": {
+      "main": [
+        [
+          {
+            "node": "depurar output IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar HTML Dashboard3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model8": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "rrhh junior",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "depurar output IA11": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rrhh junior": {
+      "main": [
+        [
+          {
+            "node": "depurar output IA11",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "ce11c702-2d12-455a-8cf6-d86c84c3ead3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "222127bd61432024b743b7c80fd78be3d217cd7dc9aece772cb095e64c7c94c4"
+  },
+  "id": "WOiSpLaKUkv68Jet",
+  "tags": []
+}
