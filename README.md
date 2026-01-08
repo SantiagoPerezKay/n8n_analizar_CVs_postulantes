@@ -7,9 +7,13 @@ Esta automatización corresponde a un **workflow de n8n para el análisis autom�
 El objetivo del flujo es **recibir CVs de candidatos**, analizarlos mediante **IA**, extraer información relevante, evaluar su adecuación al puesto y generar un **resumen estructurado** que facilite la toma de decisiones del área de RRHH.
 
 El proyecto está pensado como una **herramienta de preselección**, no como un sistema definitivo de contratación.
-![Workflow WhatsApp Bot](postulantes.png)
-![Workflow WhatsApp Bot](postulantes_dash.png)
-![Workflow WhatsApp Bot](bd_postulantes.png)
+
+Workflow cv postulantes
+![Workflow cv postulantes](postulantes.png)
+postulantes dashboard
+![Workflow postulantes dashboard](postulantes_dash.png)
+BD supabase
+![Workflow BD supabase](bd_postulantes.png)
 ---
 
 ## Objetivo del workflow
